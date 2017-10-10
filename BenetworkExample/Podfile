@@ -1,0 +1,16 @@
+platform :ios, '9.0'
+use_frameworks!
+inhibit_all_warnings!
+
+def shared_pods
+	#pod 'Benetwork', :path => "../../Benetwork/"
+	pod 'Benetwork', :git => "https://github.com/NSDavidObject/Benetwork.git"
+end
+
+target "BenetworkExample" do
+	shared_pods
+end
+
+target "BenetworkExampleTests" do
+	shared_pods
+end
