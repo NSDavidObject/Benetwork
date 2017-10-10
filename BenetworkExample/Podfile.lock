@@ -10,7 +10,7 @@ EXTERNAL SOURCES:
 
 CHECKOUT OPTIONS:
   Benetwork:
-    :commit: b5dc65bf4a54005c7f584fa10e0c64f2787546d8
+    :commit: 1aabfb61d997dbc7928eab9e7db3e3b41dc297ce
     :git: https://github.com/NSDavidObject/Benetwork.git
 
 SPEC CHECKSUMS:
