@@ -10,17 +10,17 @@ import Foundation
 
 // MARK: Object Construction Error
 
-enum ObjectConstructionError: Error {
+public enum ObjectConstructionError: Error {
     case unexpectedType
 }
 
 // MARK: Object Construction Response
 
-protocol ObjectConstructibleResponse: ConstructibleResponse where ReturnType == ObjectType {}
+public protocol ObjectConstructibleResponse: ConstructibleResponse where ReturnType == ObjectType {}
 
 // MARK: ObjectsArrayConstructibleResponse
 
-protocol ObjectsArrayConstructibleResponse: ConstructibleResponse where ReturnType == [ObjectType] {}
+public protocol ObjectsArrayConstructibleResponse: ConstructibleResponse where ReturnType == [ObjectType] {}
 
 extension ObjectsArrayConstructibleResponse {
     

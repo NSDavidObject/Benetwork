@@ -14,6 +14,13 @@
 		557584961F8D1CE800FB341D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 557584951F8D1CE800FB341D /* Assets.xcassets */; };
 		557584991F8D1CE800FB341D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 557584971F8D1CE800FB341D /* LaunchScreen.storyboard */; };
 		557584A41F8D1CE800FB341D /* BenetworkExampleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 557584A31F8D1CE800FB341D /* BenetworkExampleTests.swift */; };
+		557584B01F8D1E4300FB341D /* FixerNetworkRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 557584AF1F8D1E4300FB341D /* FixerNetworkRequest.swift */; };
+		557584B51F8D1F8700FB341D /* FixerNetworkGetRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 557584B41F8D1F8700FB341D /* FixerNetworkGetRequest.swift */; };
+		557584B71F8D1FC100FB341D /* FixerAPIConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 557584B61F8D1FC100FB341D /* FixerAPIConstants.swift */; };
+		557584BB1F8D206000FB341D /* FixerLastestDataRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 557584BA1F8D206000FB341D /* FixerLastestDataRequest.swift */; };
+		557584BE1F8D208B00FB341D /* Currency.swift in Sources */ = {isa = PBXBuildFile; fileRef = 557584BD1F8D208B00FB341D /* Currency.swift */; };
+		557584C01F8D210300FB341D /* CurrencyConversion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 557584BF1F8D210300FB341D /* CurrencyConversion.swift */; };
+		557584C31F8D236400FB341D /* FixerLatestDataResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 557584C21F8D236400FB341D /* FixerLatestDataResponse.swift */; };
 		8C1FAF82BA45A13EACC9E1A6 /* Pods_BenetworkExampleTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D8C7B9F358B44F95F10C7FC3 /* Pods_BenetworkExampleTests.framework */; };
 /* End PBXBuildFile section */
 
@@ -39,6 +46,13 @@
 		5575849F1F8D1CE800FB341D /* BenetworkExampleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BenetworkExampleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		557584A31F8D1CE800FB341D /* BenetworkExampleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BenetworkExampleTests.swift; sourceTree = "<group>"; };
 		557584A51F8D1CE800FB341D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		557584AF1F8D1E4300FB341D /* FixerNetworkRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FixerNetworkRequest.swift; sourceTree = "<group>"; };
+		557584B41F8D1F8700FB341D /* FixerNetworkGetRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FixerNetworkGetRequest.swift; sourceTree = "<group>"; };
+		557584B61F8D1FC100FB341D /* FixerAPIConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FixerAPIConstants.swift; sourceTree = "<group>"; };
+		557584BA1F8D206000FB341D /* FixerLastestDataRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FixerLastestDataRequest.swift; sourceTree = "<group>"; };
+		557584BD1F8D208B00FB341D /* Currency.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Currency.swift; sourceTree = "<group>"; };
+		557584BF1F8D210300FB341D /* CurrencyConversion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyConversion.swift; sourceTree = "<group>"; };
+		557584C21F8D236400FB341D /* FixerLatestDataResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FixerLatestDataResponse.swift; sourceTree = "<group>"; };
 		6A872C3576C43BE5D8C73751 /* Pods-BenetworkExampleTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BenetworkExampleTests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-BenetworkExampleTests/Pods-BenetworkExampleTests.debug.xcconfig"; sourceTree = "<group>"; };
 		76EA6CC19254C6C6FFBA2E22 /* Pods_BenetworkExample.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_BenetworkExample.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		8FD6B917C4D4AA00E675AB78 /* Pods-BenetworkExampleTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BenetworkExampleTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-BenetworkExampleTests/Pods-BenetworkExampleTests.release.xcconfig"; sourceTree = "<group>"; };
@@ -100,6 +114,7 @@
 			children = (
 				5575848E1F8D1CE800FB341D /* AppDelegate.swift */,
 				557584901F8D1CE800FB341D /* ViewController.swift */,
+				557584AE1F8D1E2700FB341D /* Fixer.io API */,
 				557584921F8D1CE800FB341D /* Main.storyboard */,
 				557584951F8D1CE800FB341D /* Assets.xcassets */,
 				557584971F8D1CE800FB341D /* LaunchScreen.storyboard */,
@@ -115,6 +130,52 @@
 				557584A51F8D1CE800FB341D /* Info.plist */,
 			);
 			path = BenetworkExampleTests;
+			sourceTree = "<group>";
+		};
+		557584AE1F8D1E2700FB341D /* Fixer.io API */ = {
+			isa = PBXGroup;
+			children = (
+				557584BC1F8D207E00FB341D /* Models */,
+				557584C11F8D235400FB341D /* Responses */,
+				557584B91F8D203500FB341D /* Requests */,
+				557584B81F8D200F00FB341D /* Base Classes */,
+			);
+			path = "Fixer.io API";
+			sourceTree = "<group>";
+		};
+		557584B81F8D200F00FB341D /* Base Classes */ = {
+			isa = PBXGroup;
+			children = (
+				557584B61F8D1FC100FB341D /* FixerAPIConstants.swift */,
+				557584AF1F8D1E4300FB341D /* FixerNetworkRequest.swift */,
+				557584B41F8D1F8700FB341D /* FixerNetworkGetRequest.swift */,
+			);
+			path = "Base Classes";
+			sourceTree = "<group>";
+		};
+		557584B91F8D203500FB341D /* Requests */ = {
+			isa = PBXGroup;
+			children = (
+				557584BA1F8D206000FB341D /* FixerLastestDataRequest.swift */,
+			);
+			path = Requests;
+			sourceTree = "<group>";
+		};
+		557584BC1F8D207E00FB341D /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				557584BD1F8D208B00FB341D /* Currency.swift */,
+				557584BF1F8D210300FB341D /* CurrencyConversion.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		557584C11F8D235400FB341D /* Responses */ = {
+			isa = PBXGroup;
+			children = (
+				557584C21F8D236400FB341D /* FixerLatestDataResponse.swift */,
+			);
+			path = Responses;
 			sourceTree = "<group>";
 		};
 		C44847D86808D74E6E4CEF35 /* Pods */ = {
@@ -330,7 +391,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				557584B71F8D1FC100FB341D /* FixerAPIConstants.swift in Sources */,
+				557584B51F8D1F8700FB341D /* FixerNetworkGetRequest.swift in Sources */,
+				557584B01F8D1E4300FB341D /* FixerNetworkRequest.swift in Sources */,
+				557584BB1F8D206000FB341D /* FixerLastestDataRequest.swift in Sources */,
+				557584C31F8D236400FB341D /* FixerLatestDataResponse.swift in Sources */,
+				557584C01F8D210300FB341D /* CurrencyConversion.swift in Sources */,
 				557584911F8D1CE800FB341D /* ViewController.swift in Sources */,
+				557584BE1F8D208B00FB341D /* Currency.swift in Sources */,
 				5575848F1F8D1CE800FB341D /* AppDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

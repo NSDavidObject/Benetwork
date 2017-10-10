@@ -10,12 +10,12 @@ EXTERNAL SOURCES:
 
 CHECKOUT OPTIONS:
   Benetwork:
-    :commit: 4f1be625a73b975606f45f58bbfdceeb7b138252
+    :commit: b5dc65bf4a54005c7f584fa10e0c64f2787546d8
     :git: https://github.com/NSDavidObject/Benetwork.git
 
 SPEC CHECKSUMS:
   Benetwork: 1caf9efea49d4d850fe386053694ec7ee17a8ad8
 
-PODFILE CHECKSUM: a7b686e1b82fabf6fd40fe48520c17b1c1b0d105
+PODFILE CHECKSUM: 23b542e0032f70aadf6421e50255fdbcca80b19e
 
 COCOAPODS: 1.2.1
