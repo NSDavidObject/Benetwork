@@ -1,9 +1,9 @@
 //
 //  ParsingError.swift
-//  Matterly
+//  Benetwork
 //
 //  Created by David Elsonbaty on 8/29/17.
-//  Copyright © 2017 Matterly. All rights reserved.
+//  Copyright © 2017 Benetwork. All rights reserved.
 //
 
 import Foundation

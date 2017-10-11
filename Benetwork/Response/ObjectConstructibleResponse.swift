@@ -1,9 +1,9 @@
 //
 //  ObjectConstructibleResponse.swift
-//  Matterly
+//  Benetwork
 //
 //  Created by David Elsonbaty on 9/24/17.
-//  Copyright © 2017 Matterly. All rights reserved.
+//  Copyright © 2017 Benetwork. All rights reserved.
 //
 
 import Foundation
@@ -24,7 +24,7 @@ public protocol ObjectsArrayConstructibleResponse: ConstructibleResponse where R
 
 extension ObjectsArrayConstructibleResponse {
     
-    static func constructResponse(json: Any) throws -> [ObjectType] {
+    public static func constructResponse(json: Any) throws -> [ObjectType] {
         guard let jsonArray = json as? [JSONDictionary] else { throw ObjectConstructionError.unexpectedType }
         return ObjectType.models(for: jsonArray)
     }

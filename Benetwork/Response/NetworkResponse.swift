@@ -1,9 +1,9 @@
 //
 //  NetworkResponse.swift
-//  Matterly
+//  Benetwork
 //
 //  Created by David Elsonbaty on 10/7/17.
-//  Copyright © 2017 Matterly. All rights reserved.
+//  Copyright © 2017 Benetwork. All rights reserved.
 //
 
 import Foundation

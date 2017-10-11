@@ -11,7 +11,7 @@ public enum JSON {
     case array(JSONArray)
     case dictionary(JSONDictionary)
     
-    var value: Any {
+    public var value: Any {
         switch self {
         case .array(let array): return array
         case .dictionary(let dictionary): return dictionary

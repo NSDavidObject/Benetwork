@@ -3,7 +3,7 @@
 //  BenetworkExample
 //
 //  Created by David Elsonbaty on 10/10/17.
-//  Copyright © 2017 Matterly. All rights reserved.
+//  Copyright © 2017 Benetwork. All rights reserved.
 //
 
 struct FixerAPIConstants {
