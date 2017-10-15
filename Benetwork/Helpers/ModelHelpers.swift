@@ -27,6 +27,17 @@ extension JSONConstructible {
     }
 }
 
+public protocol EnumJSONConstrucible: JSONConstructible {
+    static func value(fromJSON json: JSONDictionary) throws -> Self
+}
+
+extension EnumJSONConstrucible {
+    
+    public init(json: JSONDictionary) throws {
+        self = try Self.value(fromJSON: json)
+    }
+}
+
 // MARK: - Disassembly
 
 public protocol JSONDisassembler {
