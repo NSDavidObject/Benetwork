@@ -1,11 +1,3 @@
-//
-//  ConstructibleResponse.swift
-//  Benetwork
-//
-//  Created by David Elsonbaty on 9/24/17.
-//  Copyright © 2017 Benetwork. All rights reserved.
-//
-
 import Foundation
 
 // MARK: Constructible Response
@@ -44,10 +36,10 @@ extension ConstructibleResponse where Self: NetworkRequest {
         })
     }
     
-    public func requestAndConstructOnBackgroundQueue(withPostConstructionMiddlewares middlewares: [NetworkResponseMiddleware.Type] = [], completion: @escaping (NetworkResponse<ReturnType>) -> Void) {
+    public func requestAndConstructOnBackgroundQueue(withPostConstructionMiddlewares middlewares: [NetworkResponseMiddleware.Type] = [], callbackQueue: DispatchQueue = .main, completion: @escaping (NetworkResponse<ReturnType>) -> Void) {
         DispatchQueue.global().async {
             self.requestAndConstruct(withPostConstructionMiddlewares: middlewares, completion: { result in
-                DispatchQueue.main.async {
+                callbackQueue.async {
                     completion(result)
                 }
             })

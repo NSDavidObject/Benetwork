@@ -1,17 +1,9 @@
-//
-//  ModelHelpers.swift
-//  Benetwork
-//
-//  Created by David Elsonbaty on 9/24/17.
-//  Copyright © 2017 Benetwork. All rights reserved.
-//
-
 import Foundation
 
 // MARK: - Identification
 
 public protocol Identifiable {
-    associatedtype Identifier
+    associatedtype Identifier: Hashable
 }
 
 // MARK: - Construction
@@ -23,7 +15,7 @@ public protocol JSONConstructible {
 extension JSONConstructible {
     
     public static func models(for array: [JSONDictionary]) -> [Self] {
-        return array.flatMap({ try? Self.init(json: $0) })
+        return array.compactMap({ try? Self.init(json: $0) })
     }
 }
 

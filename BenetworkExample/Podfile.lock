@@ -1,0 +1,21 @@
+PODS:
+  - Benetwork (1.0.0)
+
+DEPENDENCIES:
+  - Benetwork (from `https://github.com/NSDavidObject/Benetwork.git`)
+
+EXTERNAL SOURCES:
+  Benetwork:
+    :git: https://github.com/NSDavidObject/Benetwork.git
+
+CHECKOUT OPTIONS:
+  Benetwork:
+    :commit: 2599b65a75794e9a4c3521bd671906b4640268d2
+    :git: https://github.com/NSDavidObject/Benetwork.git
+
+SPEC CHECKSUMS:
+  Benetwork: 1caf9efea49d4d850fe386053694ec7ee17a8ad8
+
+PODFILE CHECKSUM: 0d3243be0beec05a8fe09fc2dc0f245487218769
+
+COCOAPODS: 1.5.3

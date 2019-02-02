@@ -1,17 +1,14 @@
-//
-//  Optionals+Additions.swift
-//  Benetwork
-//
-//  Created by David Elsonbaty on 8/29/17.
-//  Copyright © 2017 Benetwork. All rights reserved.
-//
-
 import Foundation
 
 extension Optional {
 
-    public func required() throws -> Wrapped {
-        guard let value = self.flatMap({ $0 }) else { throw ParsingError.valueNotFound }
-        return value
+    public func required(file: String = #file, line: Int = #line, function: String = #function) throws -> Wrapped {
+        switch self {
+        case .none:
+            print("Failed to unwrap required field in \(file.components(separatedBy: "/").last ?? ""):\(line) : \(function)")
+            throw ParsingError.valueNotFound
+        case .some(let value):
+            return value
+        }
     }
 }

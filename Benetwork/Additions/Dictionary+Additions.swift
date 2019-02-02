@@ -1,11 +1,3 @@
-//
-//  Dictionary+Additions.swift
-//  Benetwork
-//
-//  Created by David Elsonbaty on 8/29/17.
-//  Copyright © 2017 Benetwork. All rights reserved.
-//
-
 import Foundation
 
 extension Dictionary {
@@ -21,7 +13,7 @@ extension Dictionary {
     
     public func enumArray<EnumType: RawRepresentable>(_ key: Key) -> [EnumType]? {
         guard let value = self[key] as? [EnumType.RawValue?] else { return nil }
-        return value.flatMap { $0 }.flatMap { EnumType(rawValue: $0) }
+        return value.compactMap { $0 }.compactMap { EnumType(rawValue: $0) }
     }
 
     public func boolean(_ key: Key) -> Bool? {

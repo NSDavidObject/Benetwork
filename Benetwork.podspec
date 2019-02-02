@@ -7,9 +7,7 @@ Pod::Spec.new do |s|
   s.social_media_url = 'https://twitter.com/NSDavidObject'
   s.authors = { 'David Elsonbaty' => 'dave@elsonbaty.ca' }
   s.source = { :git => 'https://github.com/davoda/Benetwork.git', :tag => s.version }
-
-  s.ios.deployment_target = '8.0'
+  s.platforms = { :ios => "8.0", :tvos => "10.0" }
   s.source_files = 'Benetwork/**/*.swift'
-
   s.requires_arc = true
 end

@@ -1,11 +1,3 @@
-//
-//  ObjectConstructibleResponse.swift
-//  Benetwork
-//
-//  Created by David Elsonbaty on 9/24/17.
-//  Copyright © 2017 Benetwork. All rights reserved.
-//
-
 import Foundation
 
 // MARK: Object Construction Error

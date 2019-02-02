@@ -1,10 +1,3 @@
-//
-//  NetworkResponseMiddleware.swift
-//  Benetwork
-//
-//  Created by David Elsonbaty on 10/9/17.
-//
-
 import Foundation
 
 public protocol NetworkResponseMiddleware {

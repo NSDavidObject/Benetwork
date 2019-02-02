@@ -1,11 +1,3 @@
-//
-//  JSONSerializer.swift
-//  Benetwork
-//
-//  Created by David Elsonbaty on 9/24/17.
-//  Copyright © 2017 Benetwork. All rights reserved.
-//
-
 import Foundation
 
 public final class JSONSerializer {

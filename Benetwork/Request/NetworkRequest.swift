@@ -1,11 +1,3 @@
-//
-//  NetworkRequest.swift
-//  Benetwork
-//
-//  Created by David Elsonbaty on 9/24/17.
-//  Copyright © 2017 Benetwork. All rights reserved.
-//
-
 import Foundation
 
 // MARK: - Network Method
@@ -26,6 +18,7 @@ public protocol NetworkRequest {
     var urlParameters: [String: CustomStringConvertible] { get }
     var bodyParameters: [String: AnyObject] { get }
     var responseMiddlewares: [NetworkResponseMiddleware.Type] { get }
+    var rateLimiterType: RateLimitType { get }
 }
 
 // Setup default values
@@ -41,6 +34,10 @@ extension NetworkRequest {
     
     public var responseMiddlewares: [NetworkResponseMiddleware.Type] {
         return []
+    }
+
+    public var rateLimiterType: RateLimitType {
+        return .none
     }
 }
 
@@ -61,18 +58,7 @@ extension NetworkRequest {
     }
     
     public var constructedURL: URL {
-        
-        func percentEncode(_ original: String) -> String {
-            return original.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed) ?? ""
-        }
-        
-        var mutableURLString = urlBase + urlPath + "?"
-        for urlParameter in urlParameters {
-            mutableURLString += "\(percentEncode(urlParameter.key))=\(percentEncode((urlParameter.value).description))&"
-        }
-        
-        guard let constructedURL = URL(string: mutableURLString.trimmingCharacters(in: ["&"])) else { fatalError() }
-        return constructedURL
+        return URL.urlWithURLBase(urlBase, path: urlPath, urlParams: urlParameters)
     }
 }
 
@@ -80,7 +66,7 @@ extension NetworkRequest {
 extension NetworkRequest {
     
     public func rawRequest(completion: @escaping (NetworkResponse<Data>) -> Void) {
-        print("Requesting: \(self.constructedURL)")
+        NetworkRequestsLogger.log("Requesting: \(self.constructedURL)")
         NetworkHandler.request(self, completion: { completion($0) })
     }
     
