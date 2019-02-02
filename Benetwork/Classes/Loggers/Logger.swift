@@ -5,11 +5,11 @@ public protocol Logger {
 }
 
 public extension Logger {
-    public static var isEnabled: Bool {
+    static var isEnabled: Bool {
         return ProcessInfo.processInfo.arguments.contains("\(name)LogsEnabled-YES")
     }
 
-    public static func log(_ text: String) {
+    static func log(_ text: String) {
         guard isEnabled else { return }
         print("\(name): \(text)")
     }
