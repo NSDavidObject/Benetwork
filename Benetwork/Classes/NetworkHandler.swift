@@ -10,6 +10,7 @@ public final class NetworkHandler {
     
     public static func request(_ networkRequest: NetworkRequest, completion: @escaping (NetworkResponse<Data>) -> Void) {
         networkRequest.rateLimiterType.execute({
+            NetworkRequestsLogger.log(" Requesting: \(networkRequest.constructedURL)")
             URLSession.shared.dataTask(with: networkRequest.urlRequest, completionHandler: { data, urlResponse, error in
                 var result: Result<Data>
                 defer { completion(NetworkResponse(request: networkRequest, urlResponse: urlResponse, result: result)) }

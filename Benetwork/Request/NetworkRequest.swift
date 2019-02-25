@@ -66,7 +66,6 @@ extension NetworkRequest {
 extension NetworkRequest {
     
     public func rawRequest(completion: @escaping (NetworkResponse<Data>) -> Void) {
-        NetworkRequestsLogger.log("Requesting: \(self.constructedURL)")
         NetworkHandler.request(self, completion: { completion($0) })
     }
     
