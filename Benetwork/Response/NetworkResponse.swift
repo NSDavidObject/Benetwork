@@ -10,3 +10,10 @@ public struct NetworkResponse<T> {
         return NetworkResponse<N>(request: request, urlResponse: urlResponse, result: newResult)
     }
 }
+
+extension NetworkResponse {
+
+  public var statusCode: Int? {
+    return (urlResponse as? HTTPURLResponse)?.statusCode
+  }
+}
