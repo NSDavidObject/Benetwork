@@ -27,7 +27,7 @@ extension ConstructibleResponse {
 
 extension ConstructibleResponse where Self: NetworkRequest {
     
-    private func requestAndConstruct(withPostConstructionMiddlewares middlewares: [NetworkResponseMiddleware.Type], completion: @escaping (NetworkResponse<ReturnType>) -> Void) {
+    public func requestAndConstruct(withPostConstructionMiddlewares middlewares: [NetworkResponseMiddleware.Type] = [], completion: @escaping (NetworkResponse<ReturnType>) -> Void) {
         JSONRequest(completion: { jsonResponse in
             let constructedResult = jsonResponse.result.flatMap({ self.construct($0)  })
             let constructedResultResponse = jsonResponse.response(withResult: constructedResult)
