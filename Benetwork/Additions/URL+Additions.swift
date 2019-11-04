@@ -13,7 +13,10 @@ public extension URL {
         }
 
         var mutableURLString = urlString.last == "?" ? urlString : urlString + "?"
-        for urlParameter in urlParams {
+        let sortedURLParams = urlParams.sorted { (lhs, rhs) -> Bool in
+          return lhs.key < rhs.key
+        }
+        for urlParameter in sortedURLParams {
             mutableURLString += "\(percentEncode(urlParameter.key))=\(percentEncode((urlParameter.value).description))&"
         }
 
