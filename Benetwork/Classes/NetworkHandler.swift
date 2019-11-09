@@ -30,7 +30,10 @@ public final class NetworkHandler {
           result = .failure(error)
         case (.some(let data), _):
           result = .success(data)
+
+          #if DEBUG
           NetworkRequestsCacher.shared.cache(urlRequest: networkRequest.urlRequest, data: data)
+          #endif
         default:
           result = .failure(NetworkRequestError.noDataReceived)
         }
