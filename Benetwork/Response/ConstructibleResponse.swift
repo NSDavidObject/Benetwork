@@ -1,4 +1,4 @@
-import Foundation
+import CommonUtilities
 
 // MARK: Constructible Response
 

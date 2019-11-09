@@ -1,10 +1,4 @@
-import Foundation
-
-// MARK: - Identification
-
-public protocol Identifiable {
-    associatedtype Identifier: Hashable
-}
+import CommonUtilities
 
 // MARK: - Construction
 

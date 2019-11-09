@@ -1,4 +1,4 @@
-import Foundation
+import CommonUtilities
 
 // MARK: Object Construction Error
 

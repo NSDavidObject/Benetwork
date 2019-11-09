@@ -1,4 +1,4 @@
-import Foundation
+import CommonUtilities
 
 public final class JSONSerializer {
     
