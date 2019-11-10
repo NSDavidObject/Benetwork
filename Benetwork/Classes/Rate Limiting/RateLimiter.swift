@@ -32,17 +32,26 @@ public final class TimedLimiter {
 
             let now = Date()
             let limit = strongSelf.limit
-            let timeInterval = now.timeIntervalSince(strongSelf.lastExecutedAt)
-            if timeInterval > limit {
+
+            // Last execution in the past
+            if now > strongSelf.lastExecutedAt {
+              let timeInterval = now.timeIntervalSince(strongSelf.lastExecutedAt)
+              if timeInterval > limit {
                 strongSelf.lastExecutedAt = now
                 completionBlock()
                 return
+              } else {
+                let delay = limit - abs(timeInterval)
+                let newTime = now.addingTimeInterval(delay)
+                strongSelf.lastExecutedAt = newTime
+                strongSelf.syncQueue.asyncAfter(deadline: .now() + delay, execute: completionBlock)
+              }
+            } else {
+              let newTime = strongSelf.lastExecutedAt.addingTimeInterval(limit)
+              let delay = newTime.timeIntervalSince(now)
+              strongSelf.lastExecutedAt = newTime
+              strongSelf.syncQueue.asyncAfter(deadline: .now() + delay, execute: completionBlock)
             }
-
-            let timeSinceLastExecution = now.timeIntervalSince(strongSelf.lastExecutedAt)
-            let delayBeforeExecutionInSeconds: TimeInterval = limit - timeSinceLastExecution
-            strongSelf.lastExecutedAt = now.addingTimeInterval(delayBeforeExecutionInSeconds)
-            strongSelf.syncQueue.asyncAfter(deadline: .now() + delayBeforeExecutionInSeconds, execute: completionBlock)
         }
     }
 
