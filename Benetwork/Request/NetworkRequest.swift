@@ -49,6 +49,7 @@ extension NetworkRequest {
         let mutableRequest = NSMutableURLRequest(url: constructedURL)
         mutableRequest.httpMethod = method.rawValue
         mutableRequest.allHTTPHeaderFields = headers
+        mutableRequest.cachePolicy = .reloadIgnoringLocalCacheData
         
         if bodyParameters.keys.count > 0, let serializedData = try? JSONSerialization.data(withJSONObject: bodyParameters, options: []) {
             mutableRequest.httpBody = serializedData
