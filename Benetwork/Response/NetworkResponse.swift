@@ -1,4 +1,4 @@
-import Foundation
+import CommonUtilities
 
 public struct NetworkResponse<T> {
     

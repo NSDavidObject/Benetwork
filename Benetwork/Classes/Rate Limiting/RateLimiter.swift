@@ -20,7 +20,7 @@ public final class TimedLimiter {
     public func execute(_ block: @escaping () -> Void, onQueue queue: DispatchQueue) {
         let completionBlock: () -> Void = { [weak self] in
             guard let strongSelf = self else { return }
-            RateLimitingLogger.log("\(strongSelf.identifier) - Executing after \(strongSelf.lastExecutedAt.timeIntervalSinceNow) since last execution")
+            NetworkLogger.rateLimiting.log("\(strongSelf.identifier) - Executing after \(strongSelf.lastExecutedAt.timeIntervalSinceNow) since last execution")
             strongSelf.timeOfLastExecution = Date()
             queue.async { block() }
         }

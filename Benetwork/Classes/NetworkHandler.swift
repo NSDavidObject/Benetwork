@@ -1,4 +1,4 @@
-import Foundation
+import CommonUtilities
 
 public enum NetworkRequestError: Error {
   case noDataReceived
@@ -20,7 +20,7 @@ public final class NetworkHandler {
     #endif
 
     networkRequest.rateLimiterType.execute({
-      NetworkRequestsLogger.log(" Requesting: \(networkRequest.constructedURL)")
+      NetworkLogger.requests.log(" Requesting: \(networkRequest.constructedURL)")
       URLSession.shared.dataTask(with: networkRequest.urlRequest, completionHandler: { data, urlResponse, error in
         var result: Result<Data>
         defer { completion(NetworkResponse(request: networkRequest, urlResponse: urlResponse, result: result)) }
