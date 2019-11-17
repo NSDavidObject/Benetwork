@@ -39,13 +39,22 @@ public class NetworkRequestsCacher {
 fileprivate extension NetworkRequestsCacher {
 
   private func persistDataOnDiscIfPossible() {
-    let data = NSKeyedArchiver.archivedData(withRootObject: cache)
-    try? data.write(to: NetworkRequestsCacher.fileWriteURL)
+    let data: Data?
+    if #available(iOS 13.0, *) {
+      data = try? NSKeyedArchiver.archivedData(withRootObject: cache, requiringSecureCoding: false)
+    } else {
+      data = NSKeyedArchiver.archivedData(withRootObject: cache)
+    }
+    try? data?.write(to: NetworkRequestsCacher.fileWriteURL)
   }
 
   static var persistedCache: [CacheKey: Data]? {
     guard let data = try? Data(contentsOf: NetworkRequestsCacher.fileWriteURL) else { return nil }
-    return NSKeyedUnarchiver.unarchiveObject(with: data) as? [CacheKey: Data] ?? nil
+    if #available(iOS 13.0, *) {
+      return (try? NSKeyedUnarchiver.unarchiveTopLevelObjectWithData(data) as? [CacheKey: Data]) ?? nil
+    } else {
+      return NSKeyedUnarchiver.unarchiveObject(with: data) as? [CacheKey: Data] ?? nil
+    }
   }
 
   static var fileWriteURL: URL {
