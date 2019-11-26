@@ -1,4 +1,4 @@
-import Foundation
+import CommonUtilities
 
 #if DEBUG
 
@@ -17,7 +17,10 @@ public class NetworkRequestsCacher {
     }
   }
 
-  private var cache: [CacheKey: Data] = NetworkRequestsCacher.persistedCache ?? [:] {
+  private var cache: SynchronizedDictionary<CacheKey, Data> = {
+    guard let persistedCache = NetworkRequestsCacher.persistedCache else { return [:] }
+    return .init(dictionary: persistedCache)
+    }() {
     didSet {
       isPendingPersistenceOnDisc = true
     }

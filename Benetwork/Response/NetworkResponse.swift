@@ -14,6 +14,6 @@ public struct NetworkResponse<T> {
 extension NetworkResponse {
 
   public var statusCode: Int? {
-    return (urlResponse as? HTTPURLResponse)?.statusCode
+    return urlResponse?.statusCode
   }
 }
