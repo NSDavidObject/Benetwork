@@ -20,18 +20,16 @@ public class NetworkRequestsCacher {
   private var cache: SynchronizedDictionary<CacheKey, Data> = {
     guard let persistedCache = NetworkRequestsCacher.persistedCache else { return [:] }
     return .init(dictionary: persistedCache)
-    }() {
-    didSet {
-      isPendingPersistenceOnDisc = true
-    }
-  }
+  }()
 
   public func cache(urlRequest: URLRequest, data: Data) {
     cache[CacheKey(urlRequest: urlRequest)] = data
+    isPendingPersistenceOnDisc = true
   }
 
   public func dumpCache() {
     cache = [:]
+    isPendingPersistenceOnDisc = true
   }
 
   public func data(for urlRequest: URLRequest) -> Data? {
@@ -44,9 +42,9 @@ fileprivate extension NetworkRequestsCacher {
   private func persistDataOnDiscIfPossible() {
     let data: Data?
     if #available(iOS 13.0, *) {
-      data = try? NSKeyedArchiver.archivedData(withRootObject: cache, requiringSecureCoding: false)
+      data = try? NSKeyedArchiver.archivedData(withRootObject: cache.dictionary, requiringSecureCoding: false)
     } else {
-      data = NSKeyedArchiver.archivedData(withRootObject: cache)
+      data = NSKeyedArchiver.archivedData(withRootObject: cache.dictionary)
     }
     try? data?.write(to: NetworkRequestsCacher.fileWriteURL)
   }
@@ -70,7 +68,7 @@ fileprivate extension NetworkRequestsCacher {
 class CacheKey: NSObject, NSCoding, NSCopying {
 
   override var hash: Int {
-    return urlRequest.hashValue
+    return urlRequest.hashValue ^ urlRequest.httpBody.hashValue
   }
 
   let urlRequest: URLRequest
@@ -104,7 +102,7 @@ class CacheKey: NSObject, NSCoding, NSCopying {
   }
 
   public func encode(with aCoder: NSCoder) {
-    aCoder.encode(urlRequest, forKey:"urlRequest")
+    aCoder.encode(urlRequest, forKey: "urlRequest")
   }
 }
 
