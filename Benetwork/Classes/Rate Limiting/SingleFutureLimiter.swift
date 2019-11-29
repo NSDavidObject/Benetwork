@@ -15,7 +15,5 @@ public final class SingleFutureLimiter {
       block()
       strongSelf.timer = nil
     })
-
-//    timer?.fire()
   }
 }
