@@ -1,10 +1,8 @@
 import CommonUtilities
 
 public final class TimedLimiter {
-
   private lazy var identifier: String = UUID().uuidString
   private lazy var timeOfLastExecution: Date = Date()
-
 
   // MARK: - Properties
   public let limit: TimeInterval
