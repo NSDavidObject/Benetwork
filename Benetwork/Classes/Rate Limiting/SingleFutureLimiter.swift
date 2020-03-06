@@ -16,4 +16,9 @@ public final class SingleFutureLimiter {
       strongSelf.timer = nil
     })
   }
+
+  public func cancel() {
+    timer?.invalidate()
+    timer = nil
+  }
 }
