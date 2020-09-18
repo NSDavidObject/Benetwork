@@ -3,7 +3,9 @@ import Foundation
 extension URLResponse {
 
   public var statusCode: Int? {
-    return (self as? HTTPURLResponse)?.statusCode
+    guard let httpURLResponse = self as? HTTPURLResponse else { return nil }
+    let statusCode: Int = httpURLResponse.statusCode
+    return statusCode
   }
 
   public var isRateLimitExceeded: Bool {
