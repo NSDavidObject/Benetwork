@@ -70,6 +70,16 @@ extension NetworkRequest {
     public func rawRequest(completion: @escaping (NetworkResponse<Data>) -> Void) {
         NetworkHandler.request(self, completion: { completion($0) })
     }
+  
+  public func rawRequestOnBackgroundQueue(callbackQueue: DispatchQueue = .main, completion: @escaping (NetworkResponse<Data>) -> Void) {
+      DispatchQueue.global().async {
+        self.rawRequest { result in
+          callbackQueue.async {
+            completion(result)
+          }
+        }
+      }
+  }
     
     public func JSONRequest(completion: @escaping (NetworkResponse<JSON>) -> Void) {
         rawRequest(completion: { urlDataResponse in

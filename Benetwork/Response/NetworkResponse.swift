@@ -16,4 +16,9 @@ extension NetworkResponse {
   public var statusCode: Int? {
     return urlResponse?.statusCode
   }
+  
+  public var isSuccessful: Bool {
+    guard let statusCode = statusCode else { return false }
+    return (200..<300).contains(statusCode)
+  }
 }
