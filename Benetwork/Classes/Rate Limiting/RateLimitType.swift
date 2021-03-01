@@ -10,6 +10,16 @@ public enum RateLimitType {
 }
 
 extension RateLimitType {
+  
+  public func reset() {
+    switch self {
+    case .none: break
+    case .timed(let timer):
+      timer.reset()
+    case .singleFutureLimiter(let limiter):
+      limiter.cancel()
+    }
+  }
 
   public func execute(_ block: @escaping () -> Void, onQueue queue: DispatchQueue) {
     switch self {
