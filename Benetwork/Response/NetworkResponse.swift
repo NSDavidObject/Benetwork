@@ -1,5 +1,12 @@
 import CommonUtilities
 
+public enum NetworkResponseStatusCode: Int {
+  case ok = 200
+  case unauthorized = 401
+  case upgradeRequired = 426
+  case internalServerError = 500
+}
+
 public struct NetworkResponse<T> {
     
     public let request: NetworkRequest
