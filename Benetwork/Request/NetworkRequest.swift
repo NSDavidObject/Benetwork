@@ -27,6 +27,7 @@ public protocol NetworkRequest {
   var body: NetworkRequestBody { get }
   var responseMiddlewares: [NetworkResponseMiddleware.Type] { get }
   var rateLimiterType: RateLimitType { get }
+  var retryOnRateLimitExceedFailure: Bool { get }
 }
 
 // Setup default values
@@ -46,6 +47,10 @@ extension NetworkRequest {
   
   public var rateLimiterType: RateLimitType {
     return .none
+  }
+  
+  public var retryOnRateLimitExceedFailure: Bool {
+    return true
   }
 }
 
