@@ -16,7 +16,7 @@ public final class TimedLimiter {
 
   // MARK: - Limiter
   public func execute(_ block: @escaping () -> Void, onQueue queue: DispatchQueue) {
-    syncQueue.sync { [weak self] in
+    try? syncQueue.sync(execute: { [weak self] in
       guard let strongSelf = self else { return }
 
       let completionBlock: () -> Void = { //[weak self] in
@@ -48,7 +48,7 @@ public final class TimedLimiter {
         strongSelf.lastExecutedAt = newTime
         DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: completionBlock)
       }
-    }
+    })
   }
 
   public func reset() {
