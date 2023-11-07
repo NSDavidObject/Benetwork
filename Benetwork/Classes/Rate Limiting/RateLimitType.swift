@@ -1,4 +1,4 @@
-import Foundation
+import CommonUtilities
 
 public enum RateLimitType {
   // no rate limiting required
