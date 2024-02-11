@@ -45,4 +45,12 @@ extension ConstructibleResponse where Self: NetworkRequest {
             })
         }
     }
+  
+  public func requestAndConstruct(withPostConstructionMiddlewares middlewares: [NetworkResponseMiddleware.Type] = []) async throws -> NetworkResponse<ReturnType> {
+    try await withCheckedThrowingContinuation { continuation in
+      requestAndConstructOnBackgroundQueue { response in
+        continuation.resume(returning: response)
+      }
+    }
+  }
 }
