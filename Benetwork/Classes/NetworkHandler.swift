@@ -38,7 +38,9 @@ public final class NetworkHandler {
           result = .success(data)
 
           #if DEBUG
-          NetworkRequestsCacher.shared.cache(urlRequest: networkRequest.urlRequest, data: data)
+          Task {
+            NetworkRequestsCacher.shared.cache(urlRequest: networkRequest.urlRequest, data: data)
+          }
           #endif
         default:
           result = .failure(NetworkRequestError.noDataReceived)

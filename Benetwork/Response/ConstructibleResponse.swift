@@ -53,4 +53,12 @@ extension ConstructibleResponse where Self: NetworkRequest {
       }
     }
   }
+  
+  public func requestAndConstructSuccessOrThrow(withPostConstructionMiddlewares middlewares: [NetworkResponseMiddleware.Type] = []) async throws -> ReturnType {
+    let result = try await requestAndConstruct()
+    switch result.result {
+    case .success(let value): return value
+    case .failure(let error): throw error
+    }
+  }
 }
