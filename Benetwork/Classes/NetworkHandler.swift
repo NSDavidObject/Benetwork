@@ -38,7 +38,7 @@ public final class NetworkHandler {
           result = .success(data)
 
           #if DEBUG
-          Task {
+          Task(priority: .low) {
             NetworkRequestsCacher.shared.cache(urlRequest: networkRequest.urlRequest, data: data)
           }
           #endif
