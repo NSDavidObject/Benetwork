@@ -20,10 +20,16 @@ public final class NetworkHandler {
     #endif
 
     networkRequest.rateLimiterType.execute({
-      NetworkLogger.requests.log(" Requesting: \(networkRequest.constructedURL)")
+      NetworkLogger.requests.log("Requesting: \(networkRequest.constructedURL)")
       URLSession.shared.dataTask(with: networkRequest.urlRequest, completionHandler: { data, urlResponse, error in
         if let urlResponse = urlResponse, urlResponse.isRateLimitExceeded, networkRequest.retryOnRateLimitExceedFailure {
-          NetworkLogger.requests.log(" Rate Limit Exceeded")
+          NetworkLogger.requests.log("Rate Limit Exceeded")
+          request(networkRequest, completion: completion)
+          return
+        }
+        
+        if let nsError = error as? NSError, networkRequest.retryOnTimeoutFailure, nsError.code == -1001 {
+          NetworkLogger.requests.log("Rate Limit Exceeded")
           request(networkRequest, completion: completion)
           return
         }
