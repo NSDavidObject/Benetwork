@@ -8,7 +8,7 @@ public enum NetworkRequestError: Error {
 
 public final class NetworkHandler {
 
-  public static func request(_ networkRequest: NetworkRequest, completion: @escaping (NetworkResponse<Data>) -> Void) {
+  public static func request(_ networkRequest: NetworkRequest, completion: @escaping (NetworkResponse<Data>) -> Void, numberOfRetries: Int = 0) {
 
     #if DEBUG
     if NetworkRequestsCacher.shared.isOn, let cachedValue = NetworkRequestsCacher.shared.data(for: networkRequest.urlRequest) {
@@ -28,9 +28,9 @@ public final class NetworkHandler {
           return
         }
         
-        if let nsError = error as? NSError, networkRequest.retryOnTimeoutFailure, nsError.code == -1001 {
+        if let nsError = error as? NSError, networkRequest.retryOnTimeoutFailure, nsError.code == -1001, numberOfRetries < 3 {
           NetworkLogger.requests.log("Rate Limit Exceeded")
-          request(networkRequest, completion: completion)
+          request(networkRequest, completion: completion, numberOfRetries: numberOfRetries.successor)
           return
         }
 
