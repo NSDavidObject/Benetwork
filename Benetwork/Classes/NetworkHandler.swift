@@ -24,16 +24,20 @@ public final class NetworkHandler {
       URLSession.shared.dataTask(with: networkRequest.urlRequest, completionHandler: { data, urlResponse, error in
         if let urlResponse = urlResponse, urlResponse.isRateLimitExceeded, networkRequest.retryOnRateLimitExceedFailure {
           NetworkLogger.requests.log("Rate Limit Exceeded")
+          networkRequest.rateLimiterType.informRateLimitHit()
           request(networkRequest, completion: completion)
           return
         }
         
         if let nsError = error as? NSError, networkRequest.retryOnTimeoutFailure, nsError.code == -1001, numberOfRetries < 3 {
           NetworkLogger.requests.log("Rate Limit Exceeded")
+          networkRequest.rateLimiterType.informRateLimitHit()
           request(networkRequest, completion: completion, numberOfRetries: numberOfRetries.successor)
           return
         }
 
+        networkRequest.rateLimiterType.informSuccessfulCompletion()
+        
         var result: Result<Data>
         defer { completion(NetworkResponse(request: networkRequest, urlResponse: urlResponse, result: result)) }
 
@@ -44,9 +48,9 @@ public final class NetworkHandler {
           result = .success(data)
 
           #if DEBUG
-          Task(priority: .low) {
-            NetworkRequestsCacher.shared.cache(urlRequest: networkRequest.urlRequest, data: data)
-          }
+//          Task(priority: .low) {
+//            NetworkRequestsCacher.shared.cache(urlRequest: networkRequest.urlRequest, data: data)
+//          }
           #endif
         default:
           result = .failure(NetworkRequestError.noDataReceived)
