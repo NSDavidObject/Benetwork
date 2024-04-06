@@ -74,7 +74,7 @@ public class FrequencyRateLimiter {
     case disabled
   }
   
-  private let syncQueue = DispatchQueue(label: "com.watchioapikit.tmdbapi")
+  private let syncQueue = DispatchQueue(label: "com.watchioapikit.tmdbapi", qos: .userInitiated)
   private let requestsPerInterval: Int
   private lazy var currentRateLimit: Int = requestsPerInterval
   

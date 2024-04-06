@@ -56,6 +56,6 @@ public final class NetworkHandler {
           result = .failure(NetworkRequestError.noDataReceived)
         }
       }).resume()
-    }, onQueue: .global())
+    }, onQueue: .global(qos: .userInitiated))
   }
 }
