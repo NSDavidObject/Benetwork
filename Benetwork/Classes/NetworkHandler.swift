@@ -10,8 +10,16 @@ public final class NetworkHandler {
 
   public static func request(_ networkRequest: NetworkRequest, completion: @escaping (NetworkResponse<Data>) -> Void, numberOfRetries: Int = 0) {
 
+    let urlRequest: URLRequest
+    do {
+      urlRequest = try networkRequest.urlRequest()
+    } catch {
+      completion(.init(request: networkRequest, urlResponse: nil, result: .failure(error)))
+      return
+    }
+    
     #if DEBUG
-    if NetworkRequestsCacher.shared.isOn, let cachedValue = NetworkRequestsCacher.shared.data(for: networkRequest.urlRequest) {
+    if NetworkRequestsCacher.shared.isOn, let cachedValue = try? NetworkRequestsCacher.shared.data(for: networkRequest.urlRequest()) {
       DispatchQueue.global().async {
         completion(NetworkResponse(request: networkRequest, urlResponse: nil, result: .success(cachedValue)))
       }
@@ -21,7 +29,7 @@ public final class NetworkHandler {
 
     networkRequest.rateLimiterType.execute({
       NetworkLogger.requests.log("Requesting: \(networkRequest.constructedURL)")
-      URLSession.shared.dataTask(with: networkRequest.urlRequest, completionHandler: { data, urlResponse, error in
+      URLSession.shared.dataTask(with: urlRequest, completionHandler: { data, urlResponse, error in
         if let urlResponse = urlResponse, urlResponse.isRateLimitExceeded, networkRequest.retryOnRateLimitExceedFailure {
           NetworkLogger.requests.log("Rate Limit Exceeded")
           networkRequest.rateLimiterType.informRateLimitHit()

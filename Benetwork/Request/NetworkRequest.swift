@@ -62,8 +62,8 @@ extension NetworkRequest {
 // Helpers
 extension NetworkRequest {
   
-  public var urlRequest: URLRequest {
-    let mutableRequest = NSMutableURLRequest(url: constructedURL)
+  public func urlRequest() throws -> URLRequest {
+    let mutableRequest = NSMutableURLRequest(url: try constructedURL())
     mutableRequest.httpMethod = method.rawValue
     mutableRequest.allHTTPHeaderFields = headers
     mutableRequest.cachePolicy = .reloadIgnoringLocalCacheData
@@ -82,8 +82,8 @@ extension NetworkRequest {
     return request
   }
   
-  public var constructedURL: URL {
-    return URL.urlWithURLBase(urlBase, path: urlPath, urlParams: urlParameters)
+  public func constructedURL() throws -> URL {
+    return try URL.urlWithURLBase(urlBase, path: urlPath, urlParams: urlParameters)
   }
 }
 

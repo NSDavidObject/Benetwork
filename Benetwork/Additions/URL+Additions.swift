@@ -2,12 +2,12 @@ import Foundation
 
 public extension URL {
   
-  static func urlWithURLBase(_ base: String, path: String, urlParams: [String: CustomStringConvertible]) -> URL {
+  static func urlWithURLBase(_ base: String, path: String, urlParams: [String: CustomStringConvertible]) throws -> URL {
     let urlString = base + path
-    return urlWithURLString(urlString, urlParams: urlParams)
+    return try urlWithURLString(urlString, urlParams: urlParams)
   }
   
-  static func urlWithURLString(_ urlString: String, urlParams: [String: CustomStringConvertible]) -> URL {
+  static func urlWithURLString(_ urlString: String, urlParams: [String: CustomStringConvertible]) throws -> URL {
     func percentEncode(_ original: String) -> String {
       return original.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed) ?? ""
     }
@@ -20,7 +20,9 @@ public extension URL {
       mutableURLString += "\(percentEncode(urlParameter.key))=\(percentEncode((urlParameter.value).description))&"
     }
     
-    guard let constructedURL = URL(string: mutableURLString.trimmingCharacters(in: ["&"])) else { fatalError() }
+    guard let constructedURL = URL(string: mutableURLString.trimmingCharacters(in: ["&"])) else {
+      throw "Invalid url"
+    }
     return constructedURL
   }
 }
