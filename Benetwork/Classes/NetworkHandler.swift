@@ -28,7 +28,7 @@ public final class NetworkHandler {
     #endif
 
     networkRequest.rateLimiterType.execute({
-      NetworkLogger.requests.log("Requesting: \(networkRequest.constructedURL)")
+      NetworkLogger.requests.log("Requesting: \(urlRequest.url?.absoluteString ?? "")")
       URLSession.shared.dataTask(with: urlRequest, completionHandler: { data, urlResponse, error in
         if let urlResponse = urlResponse, urlResponse.isRateLimitExceeded, networkRequest.retryOnRateLimitExceedFailure {
           NetworkLogger.requests.log("Rate Limit Exceeded")
