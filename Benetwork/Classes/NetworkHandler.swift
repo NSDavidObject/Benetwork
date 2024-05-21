@@ -20,9 +20,7 @@ public final class NetworkHandler {
     
     #if DEBUG
     if NetworkRequestsCacher.shared.isOn, let cachedValue = try? NetworkRequestsCacher.shared.data(for: networkRequest.urlRequest()) {
-      DispatchQueue.global().async {
-        completion(NetworkResponse(request: networkRequest, urlResponse: nil, result: .success(cachedValue)))
-      }
+      completion(NetworkResponse(request: networkRequest, urlResponse: nil, result: .success(cachedValue)))
       return
     }
     #endif
@@ -56,9 +54,9 @@ public final class NetworkHandler {
           result = .success(data)
 
           #if DEBUG
-//          Task(priority: .low) {
-//            NetworkRequestsCacher.shared.cache(urlRequest: networkRequest.urlRequest, data: data)
-//          }
+          Task(priority: .low) {
+            NetworkRequestsCacher.shared.cache(urlRequest: urlRequest, data: data)
+          }
           #endif
         default:
           result = .failure(NetworkRequestError.noDataReceived)
