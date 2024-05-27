@@ -17,7 +17,7 @@ public class NetworkRequestsCacher {
     }
   }
 
-  private var cache: SynchronizedDictionary<CacheKey, Data> = {
+  private lazy var cache: SynchronizedDictionary<CacheKey, Data> = {
     guard let persistedCache = NetworkRequestsCacher.persistedCache else { return [:] }
     return .init(dictionary: persistedCache)
   }()

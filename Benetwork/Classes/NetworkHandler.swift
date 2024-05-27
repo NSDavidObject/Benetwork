@@ -54,8 +54,10 @@ public final class NetworkHandler {
           result = .success(data)
 
           #if DEBUG
-          Task(priority: .low) {
-            NetworkRequestsCacher.shared.cache(urlRequest: urlRequest, data: data)
+          if NetworkRequestsCacher.shared.isOn {
+            Task(priority: .low) {
+              NetworkRequestsCacher.shared.cache(urlRequest: urlRequest, data: data)
+            }
           }
           #endif
         default:
