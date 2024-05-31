@@ -11,4 +11,8 @@ extension URLResponse {
   public var isRateLimitExceeded: Bool {
     return statusCode == 429
   }
+  
+  public var isNotFound: Bool {
+    return statusCode == 404
+  }
 }
