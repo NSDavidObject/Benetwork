@@ -87,7 +87,7 @@ public class TokenBucket: NSObject {
       fatalError("Cannot consume \(count) amount of tokens on a bucket with capacity \(capacity)")
     }
     
-    let _ = tryConsume(count, until: Date.distantFuture)
+    let _ = tryConsume(count, until: .now.addingTimeInterval(0.1))
   }
   
   public func tryConsume(_ count: Int, until limitDate: Date) -> Bool {
