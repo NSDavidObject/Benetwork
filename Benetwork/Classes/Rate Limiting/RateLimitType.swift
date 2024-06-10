@@ -25,6 +25,19 @@ extension RateLimitType {
     }
   }
   
+  public func execute(_ block: @escaping () -> Void) async {
+    switch self {
+    case .none:
+      execute(block, onQueue: .global())
+    case .timed(let timedLimiter):
+      timedLimiter.execute(block, onQueue: .global())
+    case .singleFutureLimiter(let singleFutureLimiter):
+      singleFutureLimiter.execute(block)
+    case .perFrequency(let frequencyRateLimiter):
+      await frequencyRateLimiter.execute(block)
+    }
+  }
+  
   public func execute(_ block: @escaping () -> Void, onQueue queue: DispatchQueue) {
     switch self {
     case .none:
@@ -56,79 +69,54 @@ extension RateLimitType {
 }
 
 
+import Foundation
 
-
-
-public class TokenBucket: NSObject {
+public class TokenBucket {
   public let capacity: Int
   public private(set) var tokensPerInterval: Int
   public private(set) var replenishingInterval: TimeInterval
   
-  private var _tokenCount: Int
-  public var tokenCount: Int {
-    replenish()
-    return _tokenCount
-  }
+  private var tokenCount: Int
   private var lastReplenished: Date
+  private let lock = NSLock()
   
   public init(capacity: Int, tokensPerInterval: Int, interval: TimeInterval, initialTokenCount: Int = 0) {
-    guard interval > 0.0 else {
-      fatalError("interval must be a positive number")
-    }
     self.capacity = capacity
     self.tokensPerInterval = tokensPerInterval
     self.replenishingInterval = interval
-    self._tokenCount = min(capacity, initialTokenCount)
+    self.tokenCount = min(capacity, initialTokenCount)
     self.lastReplenished = Date()
   }
   
-  public func consume(_ count: Int) {
+  public func consume(_ count: Int) async {
     guard count <= capacity else {
-      fatalError("Cannot consume \(count) amount of tokens on a bucket with capacity \(capacity)")
+      fatalError("Cannot consume more tokens than the capacity.")
     }
     
-    let _ = tryConsume(count, until: .now.addingTimeInterval(0.1))
-  }
-  
-  public func tryConsume(_ count: Int, until limitDate: Date) -> Bool {
-    guard count <= capacity else {
-      fatalError("Cannot consume \(count) amount of tokens on a bucket with capacity \(capacity)")
+    while true {
+      if tokenCount >= count {
+        tokenCount -= count
+        return
+      }
+      await replenish()
+      if tokenCount >= count {
+        tokenCount -= count
+        return
+      }
+      try? await Task.sleep(nanoseconds: .random(in: 10_000_000...50_000_000)) // Sleep for 50 milliseconds
     }
-    
-    return wait(until: limitDate, for: count)
   }
   
-  private let condition = NSCondition()
-  private func replenish() {
-    condition.lock()
-    let ellapsedTime = abs(lastReplenished.timeIntervalSinceNow)
-    if ellapsedTime > replenishingInterval {
-      let ellapsedIntervals = Int((floor(ellapsedTime / Double(replenishingInterval))))
-      _tokenCount = min(_tokenCount + (ellapsedIntervals * tokensPerInterval), capacity)
+  private func replenish() async {
+    lock.lock()
+    defer { lock.unlock() }
+    
+    let elapsedTime = -lastReplenished.timeIntervalSinceNow
+    if elapsedTime > replenishingInterval {
+      let elapsedIntervals = Int(elapsedTime / replenishingInterval)
+      tokenCount = min(tokenCount + (elapsedIntervals * tokensPerInterval), capacity)
       lastReplenished = Date()
-      condition.signal()
     }
-    condition.unlock()
-  }
-  
-  private func wait(until limitDate: Date, for tokens: Int) -> Bool {
-    replenish()
-    
-    condition.lock()
-    defer {
-      condition.unlock()
-    }
-    while _tokenCount < tokens {
-      if limitDate < Date() {
-        return false
-      }
-      DispatchQueue.global().async {
-        self.replenish()
-      }
-      condition.wait(until: Date().addingTimeInterval(0.2))
-    }
-    _tokenCount -= tokens
-    return true
   }
 }
 
@@ -158,19 +146,28 @@ public class FrequencyRateLimiter {
   private var dynamicAdjustState: RateLimitAdjustmentState = .enabled()
   private let interval: TimeInterval // Interval in seconds
   
-  private lazy var tokenBucket: Atomic<TokenBucket> = .init(createBucket())
+  private lazy var tokenBucket: TokenBucket = createBucket()
   
-  public init(requestsPerFrequency: Int, frequency: Frequency) {
+  private let taskPriority: TaskPriority
+  public init(requestsPerFrequency: Int, frequency: Frequency, taskPriority: TaskPriority = .background) {
     self.requestsPerInterval = requestsPerFrequency
     self.interval = frequency.intervalInSeconds
+    self.taskPriority = taskPriority
   }
   
-  public func execute(_ block: @escaping () -> Void, completion: Completion? = nil, onQueue queue: DispatchQueue) {
-    tokenBucket.value.consume(1)
-    queue.async(execute: {
-      block()
-      completion?()
-    })
+  public func execute(_ block: @escaping () -> Void) async {
+    await tokenBucket.consume(1)
+    block()
+  }
+  
+  public func execute(_ block: @escaping () -> Void, completion: (() -> Void)? = nil, onQueue queue: DispatchQueue) {
+    Task(priority: taskPriority) {
+      await tokenBucket.consume(1)
+      queue.async {
+        block()
+        completion?()
+      }
+    }
   }
   
   public func informSuccessfulCompletion() {
@@ -195,7 +192,7 @@ public class FrequencyRateLimiter {
     // Disable until next success, this ensures we don't keep decreasing limit during a long rate limit failure buffer.
     dynamicAdjustState = .disabled
     
-    tokenBucket.value = {
+    tokenBucket = {
       // Sleep for 15 seconds
       usleep(useconds_t(interval * 1_000_000)) // Convert 15secs to microseconds
       return createBucket()
@@ -212,6 +209,6 @@ public class FrequencyRateLimiter {
   func reset() {
     // Reset
     currentRateLimit = requestsPerInterval
-    tokenBucket.value = createBucket()
+    tokenBucket = createBucket()
   }
 }
