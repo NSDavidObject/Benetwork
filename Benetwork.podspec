@@ -11,4 +11,5 @@ Pod::Spec.new do |s|
   s.source_files = 'Benetwork/**/*.swift'
   s.requires_arc = true
   s.dependency 'CommonUtilities'
+  s.dependency 'XMLCoder'
 end

@@ -8,6 +8,24 @@ public enum NetworkRequestError: Error {
 
 public final class NetworkHandler {
 
+  public static func request(_ networkRequest: NetworkRequest) async -> NetworkResponse<Data> {
+    await withCheckedContinuation({ continuation in
+      request(networkRequest, completion: { response in
+        continuation.resume(returning: response)
+      })
+    })
+  }
+  
+  public static func requestAndThrowOnFailure(_ networkRequest: NetworkRequest) async throws -> Data {
+    let response = await request(networkRequest)
+    switch response.result {
+    case .failure(let error):
+      throw error
+    case .success(let data):
+      return data
+    }
+  }
+  
   public static func request(_ networkRequest: NetworkRequest, completion: @escaping (NetworkResponse<Data>) -> Void, numberOfRetries: Int = 0) {
 
     let urlRequest: URLRequest
