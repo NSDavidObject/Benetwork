@@ -7,12 +7,16 @@ extension URLResponse {
     let statusCode: Int = httpURLResponse.statusCode
     return statusCode
   }
+  
+  public var isSuccessful: Bool {
+    return statusCode == 200
+  }
 
   public var isRateLimitExceeded: Bool {
     return statusCode == 429
   }
   
   public var isNotFound: Bool {
-    return statusCode == 404
+    return statusCode == 404 || statusCode == 302
   }
 }
