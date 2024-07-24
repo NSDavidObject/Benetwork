@@ -38,11 +38,7 @@ extension ConstructibleResponse where Self: NetworkRequest {
   
   public func requestAndConstructOnBackgroundQueue(withPostConstructionMiddlewares middlewares: [NetworkResponseMiddleware.Type] = [], callbackQueue: DispatchQueue = .main, completion: @escaping (NetworkResponse<ReturnType>) -> Void) {
     DispatchQueue.global().async {
-      self.requestAndConstruct(withPostConstructionMiddlewares: middlewares, callbackQueue: callbackQueue, completion: { result in
-        callbackQueue.async {
-          completion(result)
-        }
-      })
+      requestAndConstruct(withPostConstructionMiddlewares: middlewares, callbackQueue: callbackQueue, completion: completion)
     }
   }
   
