@@ -111,6 +111,7 @@ public class TokenBucket {
     lock.lock()
     defer { lock.unlock() }
     
+    let replenishingInterval = self.replenishingInterval
     let elapsedTime = -lastReplenished.timeIntervalSinceNow
     if elapsedTime > replenishingInterval {
       let elapsedIntervals = Int(elapsedTime / replenishingInterval)
