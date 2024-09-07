@@ -16,6 +16,11 @@ public enum NetworkRequestBody {
   case paramters([String: AnyObject])
 }
 
+public enum NetworkRequestCache {
+  case none
+  case duration(TimeInterval)
+}
+
 // MARK: - Network Request
 
 public protocol NetworkRequest {
@@ -29,10 +34,15 @@ public protocol NetworkRequest {
   var rateLimiterType: RateLimitType { get }
   var retryOnRateLimitExceedFailure: Bool { get }
   var retryOnTimeoutFailure: Bool { get }
+  var cacheType: NetworkRequestCache { get }
 }
 
 // Setup default values
 extension NetworkRequest {
+  
+  public var cacheType: NetworkRequestCache {
+    return .none
+  }
   
   public var urlParameters: [String: CustomStringConvertible] {
     return [:]

@@ -1,4 +1,5 @@
 import CommonUtilities
+import Cache
 
 public enum NetworkRequestError: Error {
   case noDataReceived
@@ -7,6 +8,7 @@ public enum NetworkRequestError: Error {
 }
 
 public final class NetworkHandler {
+  private static let storage: DiskStorage<String, Data> = ObjectStorage<Data>().diskOnlyStorage!
 
   public static func request(_ networkRequest: NetworkRequest) async -> NetworkResponse<Data> {
     await withCheckedContinuation({ continuation in
@@ -42,6 +44,12 @@ public final class NetworkHandler {
       return
     }
     #endif
+    
+    let cacheKey: String = (try? networkRequest.constructedURL().absoluteString) ?? ""
+    if case .duration = networkRequest.cacheType, let cachedValue = try? Self.storage.entry(forKey: cacheKey).object {
+      completion(.init(request: networkRequest, urlResponse: nil, result: .success(cachedValue)))
+      return
+    }
 
     networkRequest.rateLimiterType.execute({
       NetworkLogger.requests.log("Requesting: \(urlRequest.url?.absoluteString ?? "")")
@@ -78,6 +86,10 @@ public final class NetworkHandler {
             }
           }
           #endif
+            
+          if case .duration(let duration) = networkRequest.cacheType {
+            try? Self.storage.setObject(data, forKey: cacheKey, expiry: .seconds(duration))
+          }
         default:
           result = .failure(NetworkRequestError.noDataReceived)
         }
