@@ -35,6 +35,8 @@ public protocol NetworkRequest {
   var retryOnRateLimitExceedFailure: Bool { get }
   var retryOnTimeoutFailure: Bool { get }
   var cacheType: NetworkRequestCache { get }
+  
+  func urlRequest() throws -> URLRequest
 }
 
 // Setup default values
