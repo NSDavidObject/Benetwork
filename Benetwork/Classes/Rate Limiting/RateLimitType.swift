@@ -74,7 +74,7 @@ import Foundation
 public class TokenBucket {
   public let capacity: Int
   public private(set) var tokensPerInterval: Int
-  public private(set) var replenishingInterval: TimeInterval
+  public private(set) var replenishingInterval: Atomic<TimeInterval>
   
   private var tokenCount: Int
   private var lastReplenished: Date
@@ -83,7 +83,7 @@ public class TokenBucket {
   public init(capacity: Int, tokensPerInterval: Int, interval: TimeInterval, initialTokenCount: Int = 0) {
     self.capacity = capacity
     self.tokensPerInterval = tokensPerInterval
-    self.replenishingInterval = interval
+    self.replenishingInterval = .init(interval)
     self.tokenCount = min(capacity, initialTokenCount)
     self.lastReplenished = Date()
   }
@@ -111,7 +111,7 @@ public class TokenBucket {
     lock.lock()
     defer { lock.unlock() }
     
-    let replenishingInterval = self.replenishingInterval
+    let replenishingInterval = self.replenishingInterval.value
     let elapsedTime = -lastReplenished.timeIntervalSinceNow
     if elapsedTime > replenishingInterval {
       let elapsedIntervals = Int(elapsedTime / replenishingInterval)
