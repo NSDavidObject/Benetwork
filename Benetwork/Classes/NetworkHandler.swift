@@ -68,6 +68,12 @@ public final class NetworkHandler {
           return
         }
 
+        if let error, networkRequest.retryLimit > numberOfRetries {
+          NetworkLogger.requests.log("Retrying request (\(numberOfRetries.successor)): \(urlRequest.url?.absoluteString ?? "")")
+          request(networkRequest, completion: completion, numberOfRetries: numberOfRetries.successor)
+          return
+        }
+
         networkRequest.rateLimiterType.informSuccessfulCompletion()
         
         var result: Result<Data>

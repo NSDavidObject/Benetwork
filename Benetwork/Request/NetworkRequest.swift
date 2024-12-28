@@ -32,16 +32,21 @@ public protocol NetworkRequest {
   var body: NetworkRequestBody { get }
   var responseMiddlewares: [NetworkResponseMiddleware.Type] { get }
   var rateLimiterType: RateLimitType { get }
+  var retryLimit: Int { get }
   var retryOnRateLimitExceedFailure: Bool { get }
   var retryOnTimeoutFailure: Bool { get }
   var cacheType: NetworkRequestCache { get }
-  
+
   func urlRequest() throws -> URLRequest
 }
 
 // Setup default values
 extension NetworkRequest {
-  
+
+  public var retryLimit: Int {
+    return 0
+  }
+
   public var cacheType: NetworkRequestCache {
     return .none
   }
