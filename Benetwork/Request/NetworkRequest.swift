@@ -13,7 +13,7 @@ public enum NetworkMethod: String {
 public enum NetworkRequestBody {
   case none
   case rawData(Data)
-  case paramters([String: AnyObject])
+  case paramters([String: Any])
 }
 
 public enum NetworkRequestCache {
@@ -106,7 +106,18 @@ extension NetworkRequest {
 
 // Execution
 extension NetworkRequest {
-  
+
+  public func requestAndThrowOnFailure() async throws {
+    let response = await NetworkHandler.request(self)
+    switch response.result {
+      case .failure(let error):
+        throw error
+      case .success:
+        return
+    }
+  }
+
+
   public func rawRequest(completion: @escaping (NetworkResponse<Data>) -> Void) {
     NetworkHandler.request(self, completion: { completion($0) })
   }

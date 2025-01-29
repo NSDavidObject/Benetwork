@@ -27,7 +27,7 @@ public final class NetworkHandler {
       return data
     }
   }
-  
+
   public static func request(_ networkRequest: NetworkRequest, completion: @escaping (NetworkResponse<Data>) -> Void, numberOfRetries: Int = 0) {
 
     let urlRequest: URLRequest
