@@ -109,6 +109,7 @@ extension NetworkRequest {
 
   public func requestAndThrowOnFailure() async throws {
     let response = await NetworkHandler.request(self)
+    guard response.isSuccessful else { throw "Something went wrong!".localized }
     switch response.result {
       case .failure(let error):
         throw error
