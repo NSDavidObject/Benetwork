@@ -99,7 +99,7 @@ public final class NetworkHandler {
           }
           #endif
             
-          if case .duration(let duration) = networkRequest.cacheType {
+          if case .duration(let duration) = networkRequest.cacheType, let urlResponse, urlResponse.isSuccessful {
             try? Self.storage.setObject(data, forKey: cacheKey, expiry: .seconds(duration))
           }
         default:
