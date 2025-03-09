@@ -38,7 +38,7 @@ extension RateLimitType {
     }
   }
   
-  public func execute(_ block: @escaping () -> Void, onQueue queue: DispatchQueue) {
+  public func execute(_ block: @escaping () -> Void, onQueue queue: DispatchQueue = .global()) {
     switch self {
     case .none:
       queue.async { block() }
