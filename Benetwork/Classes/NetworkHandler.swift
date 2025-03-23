@@ -46,12 +46,12 @@ public final class NetworkHandler {
     #endif
     
     let cacheKey: String = (try? networkRequest.constructedURL().absoluteString) ?? ""
-    if case .duration(let duration) = networkRequest.cacheType, let cachedEntry = try? Self.storage.entry(forKey: cacheKey), !cachedEntry.expiry.isExpired {
+    if let cachedValue = try? Self.storage.nonExpiredObjectById(cacheKey) {
       completion(
         .init(
           request: networkRequest,
           urlResponse: nil,
-          result: .success(cachedEntry.object)
+          result: .success(cachedValue)
         )
       )
       return
