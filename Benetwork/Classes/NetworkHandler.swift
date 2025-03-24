@@ -60,7 +60,7 @@ public final class NetworkHandler {
     networkRequest.rateLimiterType.execute({
       NetworkLogger.requests.log("Requesting: \(urlRequest.url?.absoluteString ?? "")")
       URLSession.shared.dataTask(with: urlRequest, completionHandler: { data, urlResponse, error in
-        if let urlResponse = urlResponse, urlResponse.isRateLimitExceeded, networkRequest.retryOnRateLimitExceedFailure, numberOfRetries < 100 {
+        if let urlResponse = urlResponse, urlResponse.isRateLimitExceeded, networkRequest.retryOnRateLimitExceedFailure, numberOfRetries < 10 {
           NetworkLogger.requests.log("Rate Limit Exceeded")
           networkRequest.rateLimiterType.informRateLimitHit()
           request(networkRequest, completion: completion, numberOfRetries: numberOfRetries.successor)
