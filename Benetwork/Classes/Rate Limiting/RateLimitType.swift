@@ -125,10 +125,13 @@ public class FrequencyRateLimiter {
   public enum Frequency {
     case perMinute
     case perSecond
+    case perSeconds(TimeInterval)
     var intervalInSeconds: TimeInterval {
       switch self {
       case .perMinute:
         return 60
+      case .perSeconds(let seconds):
+        return seconds
       case .perSecond:
         return 1
       }
