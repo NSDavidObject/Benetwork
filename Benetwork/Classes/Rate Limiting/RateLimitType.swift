@@ -163,7 +163,12 @@ public class FrequencyRateLimiter {
     await tokenBucket.consume(1)
     block()
   }
-  
+
+  public func execute<T>(_ block: @escaping () async throws -> T) async throws -> T {
+    await tokenBucket.consume(1)
+    return try await block()
+  }
+
   public func execute(_ block: @escaping () -> Void, completion: (() -> Void)? = nil, onQueue queue: DispatchQueue) {
     Task(priority: taskPriority) {
       await tokenBucket.consume(1)
