@@ -34,6 +34,8 @@ public protocol NetworkRequest {
   var rateLimiterType: RateLimitType { get }
   var retryLimit: Int { get }
   var retryOnRateLimitExceedFailure: Bool { get }
+
+  var timeoutLimit: TimeInterval? { get }
   var retryOnTimeoutFailure: Bool { get }
   var cacheType: NetworkRequestCache { get }
 
@@ -45,6 +47,10 @@ extension NetworkRequest {
 
   public var retryLimit: Int {
     return 0
+  }
+
+  public var timeoutLimit: TimeInterval? {
+    return nil
   }
 
   public var cacheType: NetworkRequestCache {
@@ -84,7 +90,11 @@ extension NetworkRequest {
     mutableRequest.httpMethod = method.rawValue
     mutableRequest.allHTTPHeaderFields = headers
     mutableRequest.cachePolicy = .reloadIgnoringLocalCacheData
-    
+
+    if let timeoutLimit {
+      mutableRequest.timeoutInterval = timeoutLimit
+    }
+
     switch body {
     case .none: break
     case .rawData(let data):
