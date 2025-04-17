@@ -46,7 +46,7 @@ public final class NetworkHandler {
     #endif
     
     let cacheKey: String = (try? networkRequest.constructedURL().absoluteString) ?? ""
-    if let cachedValue = try? Self.storage.nonExpiredObjectById(cacheKey) {
+    if let cachedValue = try? Self.storage.nonExpiredObjectById(cacheKey), !cacheKey.contains("localhost") {
       completion(
         .init(
           request: networkRequest,
