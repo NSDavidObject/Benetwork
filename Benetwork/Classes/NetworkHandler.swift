@@ -108,4 +108,35 @@ public final class NetworkHandler {
       }).resume()
     }, onQueue: .global(qos: .userInitiated))
   }
+
+  public static func request(
+    _ networkRequest: NetworkRequest,
+    progress: @escaping (Double) -> Void
+  ) async -> NetworkResponse<Data> {
+    do {
+      let urlRequest = try networkRequest.urlRequest()
+      let (bytesStream, response) = try await URLSession.shared.bytes(for: urlRequest)
+
+      guard let httpResponse = response as? HTTPURLResponse else {
+        return .init(request: networkRequest, urlResponse: nil, result: .failure(NetworkRequestError.noDataReceived))
+      }
+
+      let expectedContentLength = httpResponse.expectedContentLength
+      var downloadedData = Data()
+      var totalBytesReceived: Int64 = 0
+
+      for try await byte in bytesStream {
+        downloadedData.append(byte)
+        totalBytesReceived += 1 // each byte is size 1
+
+        if expectedContentLength > 0 {
+          let progressValue = Double(totalBytesReceived) / Double(expectedContentLength)
+          progress(progressValue)
+        }
+      }
+      return .init(request: networkRequest, urlResponse: httpResponse, result: .success(downloadedData))
+    } catch {
+      return .init(request: networkRequest, urlResponse: nil, result: .failure(error))
+    }
+  }
 }
