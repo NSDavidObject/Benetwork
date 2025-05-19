@@ -10,16 +10,16 @@ public enum NetworkRequestError: Error {
 public final class NetworkHandler {
   private static let storage: DiskStorage<String, Data> = ObjectStorage<Data>().diskOnlyStorage!
 
-  public static func request(_ networkRequest: NetworkRequest) async -> NetworkResponse<Data> {
+  public static func request(_ networkRequest: NetworkRequest, skipCache: Bool) async -> NetworkResponse<Data> {
     await withCheckedContinuation({ continuation in
-      request(networkRequest, completion: { response in
+      request(networkRequest, skipCache: skipCache, completion: { response in
         continuation.resume(returning: response)
       })
     })
   }
   
-  public static func requestAndThrowOnFailure(_ networkRequest: NetworkRequest) async throws -> Data {
-    let response = await request(networkRequest)
+  public static func requestAndThrowOnFailure(_ networkRequest: NetworkRequest, skipCache: Bool = false) async throws -> Data {
+    let response = await request(networkRequest, skipCache: skipCache)
     switch response.result {
     case .failure(let error):
       throw error
@@ -28,7 +28,7 @@ public final class NetworkHandler {
     }
   }
 
-  public static func request(_ networkRequest: NetworkRequest, completion: @escaping (NetworkResponse<Data>) -> Void, numberOfRetries: Int = 0) {
+  public static func request(_ networkRequest: NetworkRequest, skipCache: Bool, completion: @escaping (NetworkResponse<Data>) -> Void, numberOfRetries: Int = 0) {
 
     let urlRequest: URLRequest
     do {
@@ -44,17 +44,19 @@ public final class NetworkHandler {
       return
     }
     #endif
-    
+
     let cacheKey: String = (try? networkRequest.constructedURL().absoluteString) ?? ""
-    if let cachedValue = try? Self.storage.nonExpiredObjectById(cacheKey), !cacheKey.contains("localhost") {
-      completion(
-        .init(
-          request: networkRequest,
-          urlResponse: nil,
-          result: .success(cachedValue)
+    if !skipCache {
+      if let cachedValue = try? Self.storage.nonExpiredObjectById(cacheKey), !cacheKey.contains("localhost") {
+        completion(
+          .init(
+            request: networkRequest,
+            urlResponse: nil,
+            result: .success(cachedValue)
+          )
         )
-      )
-      return
+        return
+      }
     }
 
     networkRequest.rateLimiterType.execute({
@@ -63,20 +65,20 @@ public final class NetworkHandler {
         if let urlResponse = urlResponse, urlResponse.isRateLimitExceeded, networkRequest.retryOnRateLimitExceedFailure, numberOfRetries < 10 {
           NetworkLogger.requests.log("Rate Limit Exceeded")
           networkRequest.rateLimiterType.informRateLimitHit()
-          request(networkRequest, completion: completion, numberOfRetries: numberOfRetries.successor)
+          request(networkRequest, skipCache: skipCache, completion: completion, numberOfRetries: numberOfRetries.successor)
           return
         }
         
         if let nsError = error as? NSError, networkRequest.retryOnTimeoutFailure, nsError.code == -1001, numberOfRetries < 3 {
           NetworkLogger.requests.log("Rate Limit Exceeded")
           networkRequest.rateLimiterType.informRateLimitHit()
-          request(networkRequest, completion: completion, numberOfRetries: numberOfRetries.successor)
+          request(networkRequest, skipCache: skipCache, completion: completion, numberOfRetries: numberOfRetries.successor)
           return
         }
 
         if let error, networkRequest.retryLimit > numberOfRetries {
           NetworkLogger.requests.log("Retrying request (\(numberOfRetries.successor)): \(urlRequest.url?.absoluteString ?? "")")
-          request(networkRequest, completion: completion, numberOfRetries: numberOfRetries.successor)
+          request(networkRequest, skipCache: skipCache, completion: completion, numberOfRetries: numberOfRetries.successor)
           return
         }
 

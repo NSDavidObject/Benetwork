@@ -37,6 +37,7 @@ public protocol NetworkRequest {
 
   var timeoutLimit: TimeInterval? { get }
   var retryOnTimeoutFailure: Bool { get }
+
   var cacheType: NetworkRequestCache { get }
 
   func urlRequest() throws -> URLRequest
@@ -117,8 +118,8 @@ extension NetworkRequest {
 // Execution
 extension NetworkRequest {
 
-  public func requestAndThrowOnFailure() async throws {
-    let response = await NetworkHandler.request(self)
+  public func requestAndThrowOnFailure(skipCache: Bool = false) async throws {
+    let response = await NetworkHandler.request(self, skipCache: skipCache)
     guard response.isSuccessful else { throw "Something went wrong!".localized }
     switch response.result {
       case .failure(let error):
@@ -129,22 +130,22 @@ extension NetworkRequest {
   }
 
 
-  public func rawRequest(completion: @escaping (NetworkResponse<Data>) -> Void) {
-    NetworkHandler.request(self, completion: { completion($0) })
+  public func rawRequest(skipCache: Bool, completion: @escaping (NetworkResponse<Data>) -> Void) {
+    NetworkHandler.request(self, skipCache: skipCache, completion: { completion($0) })
   }
   
-  public func rawRequestOnBackgroundQueue(callbackQueue: DispatchQueue = .main, completion: @escaping (NetworkResponse<Data>) -> Void) {
+  public func rawRequestOnBackgroundQueue(skipCache: Bool, callbackQueue: DispatchQueue = .main, completion: @escaping (NetworkResponse<Data>) -> Void) {
     DispatchQueue.global().async {
-      self.rawRequest { result in
+      self.rawRequest(skipCache: skipCache, completion: { result in
         callbackQueue.async {
           completion(result)
         }
-      }
+      })
     }
   }
   
-  public func JSONRequest(completion: @escaping (NetworkResponse<JSON>) -> Void) {
-    rawRequest(completion: { urlDataResponse in
+  public func JSONRequest(skipCache: Bool, completion: @escaping (NetworkResponse<JSON>) -> Void) {
+    rawRequest(skipCache: skipCache, completion: { urlDataResponse in
       let result = urlDataResponse.result
       let jsonResult = result.flatMap({ JSONSerializer.serialize(data: $0) })
       let jsonResponse = urlDataResponse.response(withResult: jsonResult)

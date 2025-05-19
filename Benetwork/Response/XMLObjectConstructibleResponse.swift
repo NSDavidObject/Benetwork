@@ -3,8 +3,8 @@ import Benetwork
 
 extension NetworkRequest {
   
-  public func requestAndConstructXMLSuccessOrThrow<T>() async throws -> T where T: Codable {
-    let data = try await NetworkHandler.requestAndThrowOnFailure(self)
+  public func requestAndConstructXMLSuccessOrThrow<T>(skipCache: Bool) async throws -> T where T: Codable {
+    let data = try await NetworkHandler.requestAndThrowOnFailure(self, skipCache: skipCache)
     let decoder = XMLDecoder()
     decoder.shouldProcessNamespaces = true
     return try decoder.decode(T.self, from: data)
@@ -25,7 +25,7 @@ public protocol XMLObjectConstructibleResponse: XMLConstructableResponse where R
 public protocol XMLObjectsArrayConstructibleResponse: XMLConstructableResponse where ReturnType == [ObjectType] {}
 
 public extension XMLObjectConstructibleResponse where Self: NetworkRequest {
-  func requestAndConstructSuccessOrThrow() async throws -> ReturnType {
-    return try await requestAndConstructXMLSuccessOrThrow()
+  func requestAndConstructSuccessOrThrow(skipCache: Bool) async throws -> ReturnType {
+    return try await requestAndConstructXMLSuccessOrThrow(skipCache: skipCache)
   }
 }

@@ -27,8 +27,8 @@ extension ConstructibleResponse {
 
 extension ConstructibleResponse where Self: NetworkRequest {
   
-  public func requestAndConstruct(withPostConstructionMiddlewares middlewares: [NetworkResponseMiddleware.Type] = [], completion: @escaping (NetworkResponse<ReturnType>) -> Void) {
-    JSONRequest(completion: { jsonResponse in
+  public func requestAndConstruct(withPostConstructionMiddlewares middlewares: [NetworkResponseMiddleware.Type] = [], skipCache: Bool = false, completion: @escaping (NetworkResponse<ReturnType>) -> Void) {
+    JSONRequest(skipCache: skipCache, completion: { jsonResponse in
       let constructedResult = jsonResponse.result.flatMap({ self.construct($0)  })
       let constructedResultResponse = jsonResponse.response(withResult: constructedResult)
       let interceptedConstructedResultResponse = middlewares.intercepting(constructedResultResponse)
@@ -36,14 +36,14 @@ extension ConstructibleResponse where Self: NetworkRequest {
     })
   }
   
-  public func requestAndConstructOnBackgroundQueue(withPostConstructionMiddlewares middlewares: [NetworkResponseMiddleware.Type] = [], callbackQueue: DispatchQueue = .main, completion: @escaping (NetworkResponse<ReturnType>) -> Void) {
+  public func requestAndConstructOnBackgroundQueue(withPostConstructionMiddlewares middlewares: [NetworkResponseMiddleware.Type] = [], skipCache: Bool = false, callbackQueue: DispatchQueue = .main, completion: @escaping (NetworkResponse<ReturnType>) -> Void) {
     DispatchQueue.global().async {
-      requestAndConstruct(withPostConstructionMiddlewares: middlewares, callbackQueue: callbackQueue, completion: completion)
+      requestAndConstruct(withPostConstructionMiddlewares: middlewares, callbackQueue: callbackQueue, skipCache: skipCache, completion: completion)
     }
   }
   
-  private func requestAndConstruct(withPostConstructionMiddlewares middlewares: [NetworkResponseMiddleware.Type] = [], callbackQueue: DispatchQueue?, completion: @escaping (NetworkResponse<ReturnType>) -> Void) {
-    requestAndConstruct(withPostConstructionMiddlewares: middlewares, completion: { result in
+  private func requestAndConstruct(withPostConstructionMiddlewares middlewares: [NetworkResponseMiddleware.Type] = [], callbackQueue: DispatchQueue?, skipCache: Bool, completion: @escaping (NetworkResponse<ReturnType>) -> Void) {
+    requestAndConstruct(withPostConstructionMiddlewares: middlewares, skipCache: skipCache, completion: { result in
       if let callbackQueue = callbackQueue {
         callbackQueue.async {
           completion(result)
@@ -54,16 +54,16 @@ extension ConstructibleResponse where Self: NetworkRequest {
     })
   }
   
-  public func requestAndConstruct(withPostConstructionMiddlewares middlewares: [NetworkResponseMiddleware.Type] = []) async throws -> NetworkResponse<ReturnType> {
+  public func requestAndConstruct(withPostConstructionMiddlewares middlewares: [NetworkResponseMiddleware.Type] = [], skipCache: Bool = false) async throws -> NetworkResponse<ReturnType> {
     try await withCheckedThrowingContinuation { continuation in
-      requestAndConstruct(withPostConstructionMiddlewares: middlewares, callbackQueue: nil) { response in
+      requestAndConstruct(withPostConstructionMiddlewares: middlewares, callbackQueue: nil, skipCache: skipCache) { response in
         continuation.resume(returning: response)
       }
     }
   }
   
-  public func requestAndConstructSuccessOrThrow(withPostConstructionMiddlewares middlewares: [NetworkResponseMiddleware.Type] = []) async throws -> ReturnType {
-    let result = try await requestAndConstruct()
+  public func requestAndConstructSuccessOrThrow(withPostConstructionMiddlewares middlewares: [NetworkResponseMiddleware.Type] = [], skipCache: Bool = false) async throws -> ReturnType {
+    let result = try await requestAndConstruct(skipCache: skipCache)
     switch result.result {
     case .success(let value): return value
     case .failure(let error): throw error
