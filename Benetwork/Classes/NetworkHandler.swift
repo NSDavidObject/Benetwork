@@ -30,14 +30,16 @@ public final class NetworkHandler {
 
   public static func request(_ networkRequest: NetworkRequest, skipCache: Bool, completion: @escaping (NetworkResponse<Data>) -> Void, numberOfRetries: Int = 0) {
 
-    let urlRequest: URLRequest
+    var urlRequest: URLRequest
     do {
       urlRequest = try networkRequest.urlRequest()
     } catch {
       completion(.init(request: networkRequest, urlResponse: nil, result: .failure(error)))
       return
     }
-    
+
+    urlRequest.setValue("identity", forHTTPHeaderField: "Accept-Encoding")
+
     #if DEBUG
     if NetworkRequestsCacher.shared.isOn, let cachedValue = try? NetworkRequestsCacher.shared.data(for: networkRequest.urlRequest()) {
       completion(NetworkResponse(request: networkRequest, urlResponse: nil, result: .success(cachedValue)))
