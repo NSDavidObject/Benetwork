@@ -8,7 +8,10 @@ public enum NetworkRequestError: Error {
 }
 
 public final class NetworkHandler {
-  private static let storage: DiskStorage<String, Data> = ObjectStorage<Data>().diskOnlyStorage!
+  private static let storage: DiskStorage<String, Data> = ObjectStorage<Data>().diskOnlyStorage(
+    sizeInMegabytes: 100,
+    expiry: 1.daysToSeconds
+  )!
 
   public static func request(_ networkRequest: NetworkRequest, skipCache: Bool) async -> NetworkResponse<Data> {
     await withCheckedContinuation({ continuation in

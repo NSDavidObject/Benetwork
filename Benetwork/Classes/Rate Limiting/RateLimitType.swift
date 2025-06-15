@@ -210,11 +210,10 @@ public class FrequencyRateLimiter {
   
   func createBucket() -> TokenBucket {
     let capacity = currentRateLimit
-    let tokensPerInterval = max(currentRateLimit / Int(interval), 1)
-    let interval = 1
-    return TokenBucket(capacity: capacity, tokensPerInterval: tokensPerInterval, interval: TimeInterval(interval))
+    let tokensPerInterval: Int = max(Int(Double(currentRateLimit) / (interval > 0 ? interval : 1)), 1)
+    return TokenBucket(capacity: capacity, tokensPerInterval: tokensPerInterval, interval: interval, initialTokenCount: capacity)
   }
-  
+
   func reset() {
     // Reset
     currentRateLimit = requestsPerInterval
