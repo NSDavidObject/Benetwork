@@ -12,4 +12,8 @@ enum NetworkLogger: Logger {
       return "RateLimiting"
     }
   }
+
+  public func log(_ text: String, file: String = #file, function: String = #function, line: UInt = #line) {
+    print("\(name): \(text)")
+  }
 }
