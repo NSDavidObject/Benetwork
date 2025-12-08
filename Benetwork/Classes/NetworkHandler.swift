@@ -13,6 +13,10 @@ public final class NetworkHandler {
     expiry: 1.daysToSeconds
   )!
 
+  public static let allCaches: [CacheDumpable] = [
+    storage,
+  ]
+
   public static func request(_ networkRequest: NetworkRequest, skipCache: Bool) async -> NetworkResponse<Data> {
     await withCheckedContinuation({ continuation in
       request(networkRequest, skipCache: skipCache, completion: { response in
@@ -50,8 +54,8 @@ public final class NetworkHandler {
     }
     #endif
 
-    let cacheKey: String = (try? networkRequest.constructedURL().absoluteString) ?? ""
-    if !skipCache {
+    let cacheKey: String? = try? networkRequest.constructedURL().normalizedCacheKey(commaSeparatedQueryKeys: networkRequest.cacheCommaSeparatedQueryKeys)
+    if !skipCache, let cacheKey {
       if let cachedValue = try? Self.storage.nonExpiredObjectById(cacheKey), !cacheKey.contains("localhost") {
         completion(
           .init(
@@ -106,7 +110,7 @@ public final class NetworkHandler {
           }
           #endif
             
-          if case .duration(let duration) = networkRequest.cacheType, let urlResponse, urlResponse.isSuccessful {
+          if let cacheKey, case .duration(let duration) = networkRequest.cacheType, let urlResponse, urlResponse.isSuccessful {
             try? Self.storage.setObject(data, forKey: cacheKey, expiry: .seconds(duration))
           }
         default:
@@ -145,5 +149,34 @@ public final class NetworkHandler {
     } catch {
       return .init(request: networkRequest, urlResponse: nil, result: .failure(error))
     }
+  }
+}
+
+extension URL {
+  func normalizedCacheKey(commaSeparatedQueryKeys: Set<String>?) -> String {
+    guard var components = URLComponents(url: self, resolvingAgainstBaseURL: false),
+          var items = components.queryItems else {
+      return self.absoluteString
+    }
+
+    // Sort query parameters by name
+    items.sort { $0.name < $1.name }
+
+    // Normalize append_to_response specifically
+    if let commaSeparatedQueryKeys, !commaSeparatedQueryKeys.isEmpty {
+      for (idx, item) in items.enumerated() {
+        guard commaSeparatedQueryKeys.contains(item.name), let value = item.value else { continue }
+        let sortedList = value
+          .split(separator: ",")
+          .map(String.init)
+          .sorted()
+          .joined(separator: ",")
+
+        items[idx] = URLQueryItem(name: item.name, value: sortedList)
+      }
+    }
+
+    components.queryItems = items
+    return components.string ?? absoluteString
   }
 }

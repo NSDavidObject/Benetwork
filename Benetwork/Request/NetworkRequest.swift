@@ -39,6 +39,7 @@ public protocol NetworkRequest {
   var retryOnTimeoutFailure: Bool { get }
 
   var cacheType: NetworkRequestCache { get }
+  var cacheCommaSeparatedQueryKeys: Set<String>? { get }
 
   func urlRequest() throws -> URLRequest
 }
@@ -57,7 +58,11 @@ extension NetworkRequest {
   public var cacheType: NetworkRequestCache {
     return .none
   }
-  
+
+  public var cacheCommaSeparatedQueryKeys: Set<String>? {
+    return nil
+  }
+
   public var urlParameters: [String: CustomStringConvertible] {
     return [:]
   }
