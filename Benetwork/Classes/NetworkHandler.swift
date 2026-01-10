@@ -24,7 +24,7 @@ public final class NetworkHandler {
       })
     })
   }
-  
+
   public static func requestAndThrowOnFailure(_ networkRequest: NetworkRequest, skipCache: Bool = false) async throws -> Data {
     let response = await request(networkRequest, skipCache: skipCache)
     switch response.result {
@@ -47,12 +47,12 @@ public final class NetworkHandler {
 
     urlRequest.setValue("identity", forHTTPHeaderField: "Accept-Encoding")
 
-    #if DEBUG
+#if DEBUG
     if NetworkRequestsCacher.shared.isOn, let cachedValue = try? NetworkRequestsCacher.shared.data(for: networkRequest.urlRequest()) {
       completion(NetworkResponse(request: networkRequest, urlResponse: nil, result: .success(cachedValue)))
       return
     }
-    #endif
+#endif
 
     let cacheKey: String? = try? networkRequest.constructedURL().normalizedCacheKey(commaSeparatedQueryKeys: networkRequest.cacheCommaSeparatedQueryKeys)
     if !skipCache, let cacheKey {
@@ -77,7 +77,7 @@ public final class NetworkHandler {
           request(networkRequest, skipCache: skipCache, completion: completion, numberOfRetries: numberOfRetries.successor)
           return
         }
-        
+
         if let nsError = error as? NSError, networkRequest.retryOnTimeoutFailure, nsError.code == -1001, numberOfRetries < 3 {
           NetworkLogger.requests.log("Rate Limit Exceeded")
           networkRequest.rateLimiterType.informRateLimitHit()
@@ -92,7 +92,7 @@ public final class NetworkHandler {
         }
 
         networkRequest.rateLimiterType.informSuccessfulCompletion()
-        
+
         var result: Result<Data>
         defer { completion(NetworkResponse(request: networkRequest, urlResponse: urlResponse, result: result)) }
 
@@ -102,14 +102,14 @@ public final class NetworkHandler {
         case (.some(let data), _):
           result = .success(data)
 
-          #if DEBUG
+#if DEBUG
           if NetworkRequestsCacher.shared.isOn {
             Task(priority: .low) {
               NetworkRequestsCacher.shared.cache(urlRequest: urlRequest, data: data)
             }
           }
-          #endif
-            
+#endif
+
           if let cacheKey, case .duration(let duration) = networkRequest.cacheType, let urlResponse, urlResponse.isSuccessful {
             try? Self.storage.setObject(data, forKey: cacheKey, expiry: .seconds(duration))
           }
@@ -125,7 +125,9 @@ public final class NetworkHandler {
     progress: @escaping (Double) -> Void
   ) async -> NetworkResponse<Data> {
     do {
-      let urlRequest = try networkRequest.urlRequest()
+      var urlRequest = try networkRequest.urlRequest()
+      urlRequest.setValue("identity", forHTTPHeaderField: "Accept-Encoding")
+
       let (bytesStream, response) = try await URLSession.shared.bytes(for: urlRequest)
 
       guard let httpResponse = response as? HTTPURLResponse else {
@@ -135,16 +137,28 @@ public final class NetworkHandler {
       let expectedContentLength = httpResponse.expectedContentLength
       var downloadedData = Data()
       var totalBytesReceived: Int64 = 0
+      var buffer = Data()
+      let bufferSize = 65536 // 64KB chunks
 
       for try await byte in bytesStream {
-        downloadedData.append(byte)
-        totalBytesReceived += 1 // each byte is size 1
+        buffer.append(byte)
+        totalBytesReceived += 1
 
-        if expectedContentLength > 0 {
-          let progressValue = Double(totalBytesReceived) / Double(expectedContentLength)
-          progress(progressValue)
+        if buffer.count >= bufferSize {
+          downloadedData.append(buffer)
+          buffer.removeAll(keepingCapacity: true)
+
+          if expectedContentLength > 0 {
+            let progressValue = Double(totalBytesReceived) / Double(expectedContentLength)
+            progress(progressValue)
+          }
         }
       }
+
+      if !buffer.isEmpty {
+        downloadedData.append(buffer)
+      }
+
       return .init(request: networkRequest, urlResponse: httpResponse, result: .success(downloadedData))
     } catch {
       return .init(request: networkRequest, urlResponse: nil, result: .failure(error))
