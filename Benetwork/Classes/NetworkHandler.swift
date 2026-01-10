@@ -17,14 +17,6 @@ public final class NetworkHandler {
     storage,
   ]
 
-  public static func request(_ networkRequest: NetworkRequest, skipCache: Bool) async -> NetworkResponse<Data> {
-    await withCheckedContinuation({ continuation in
-      request(networkRequest, skipCache: skipCache, completion: { response in
-        continuation.resume(returning: response)
-      })
-    })
-  }
-
   public static func requestAndThrowOnFailure(_ networkRequest: NetworkRequest, skipCache: Bool = false) async throws -> Data {
     let response = await request(networkRequest, skipCache: skipCache)
     switch response.result {
@@ -35,110 +27,70 @@ public final class NetworkHandler {
     }
   }
 
-  public static func request(_ networkRequest: NetworkRequest, skipCache: Bool, completion: @escaping (NetworkResponse<Data>) -> Void, numberOfRetries: Int = 0) {
+  private static func requestInternal(
+    _ networkRequest: NetworkRequest,
+    skipCache: Bool,
+    numberOfRetries: Int = 0,
+    progress: ((Double) -> Void)? = nil
+  ) async -> NetworkResponse<Data> {
+    return await withCheckedContinuation { continuation in
+      networkRequest.rateLimiterType.execute({
+        Task {
+          let response = await _performRequest(networkRequest, skipCache: skipCache, numberOfRetries: numberOfRetries, progress: progress)
+          continuation.resume(returning: response)
+        }
+      }, onQueue: .global(qos: .userInitiated))
+    }
+  }
 
+  private static func _performRequest(
+    _ networkRequest: NetworkRequest,
+    skipCache: Bool,
+    numberOfRetries: Int = 0,
+    progress: ((Double) -> Void)? = nil
+  ) async -> NetworkResponse<Data> {
     var urlRequest: URLRequest
     do {
       urlRequest = try networkRequest.urlRequest()
     } catch {
-      completion(.init(request: networkRequest, urlResponse: nil, result: .failure(error)))
-      return
+      return .init(request: networkRequest, urlResponse: nil, result: .failure(error))
     }
 
     urlRequest.setValue("identity", forHTTPHeaderField: "Accept-Encoding")
 
+    // Cache check
 #if DEBUG
-    if NetworkRequestsCacher.shared.isOn, let cachedValue = try? NetworkRequestsCacher.shared.data(for: networkRequest.urlRequest()) {
-      completion(NetworkResponse(request: networkRequest, urlResponse: nil, result: .success(cachedValue)))
-      return
+    if NetworkRequestsCacher.shared.isOn, let cachedValue = try? NetworkRequestsCacher.shared.data(for: urlRequest) {
+      return NetworkResponse(request: networkRequest, urlResponse: nil, result: .success(cachedValue))
     }
 #endif
 
     let cacheKey: String? = try? networkRequest.constructedURL().normalizedCacheKey(commaSeparatedQueryKeys: networkRequest.cacheCommaSeparatedQueryKeys)
     if !skipCache, let cacheKey {
       if let cachedValue = try? Self.storage.nonExpiredObjectById(cacheKey), !cacheKey.contains("localhost") {
-        completion(
-          .init(
-            request: networkRequest,
-            urlResponse: nil,
-            result: .success(cachedValue)
-          )
-        )
-        return
+        return .init(request: networkRequest, urlResponse: nil, result: .success(cachedValue))
       }
     }
 
-    networkRequest.rateLimiterType.execute({
-      NetworkLogger.requests.log("Requesting: \(urlRequest.url?.absoluteString ?? "")")
-      URLSession.shared.dataTask(with: urlRequest, completionHandler: { data, urlResponse, error in
-        if let urlResponse = urlResponse, urlResponse.isRateLimitExceeded, networkRequest.retryOnRateLimitExceedFailure, numberOfRetries < 10 {
-          NetworkLogger.requests.log("Rate Limit Exceeded")
-          networkRequest.rateLimiterType.informRateLimitHit()
-          request(networkRequest, skipCache: skipCache, completion: completion, numberOfRetries: numberOfRetries.successor)
-          return
-        }
-
-        if let nsError = error as? NSError, networkRequest.retryOnTimeoutFailure, nsError.code == -1001, numberOfRetries < 3 {
-          NetworkLogger.requests.log("Rate Limit Exceeded")
-          networkRequest.rateLimiterType.informRateLimitHit()
-          request(networkRequest, skipCache: skipCache, completion: completion, numberOfRetries: numberOfRetries.successor)
-          return
-        }
-
-        if let error, networkRequest.retryLimit > numberOfRetries {
-          NetworkLogger.requests.log("Retrying request (\(numberOfRetries.successor)): \(urlRequest.url?.absoluteString ?? "")")
-          request(networkRequest, skipCache: skipCache, completion: completion, numberOfRetries: numberOfRetries.successor)
-          return
-        }
-
-        networkRequest.rateLimiterType.informSuccessfulCompletion()
-
-        var result: Result<Data>
-        defer { completion(NetworkResponse(request: networkRequest, urlResponse: urlResponse, result: result)) }
-
-        switch (data, error) {
-        case (_, .some(let error)):
-          result = .failure(error)
-        case (.some(let data), _):
-          result = .success(data)
-
-#if DEBUG
-          if NetworkRequestsCacher.shared.isOn {
-            Task(priority: .low) {
-              NetworkRequestsCacher.shared.cache(urlRequest: urlRequest, data: data)
-            }
-          }
-#endif
-
-          if let cacheKey, case .duration(let duration) = networkRequest.cacheType, let urlResponse, urlResponse.isSuccessful {
-            try? Self.storage.setObject(data, forKey: cacheKey, expiry: .seconds(duration))
-          }
-        default:
-          result = .failure(NetworkRequestError.noDataReceived)
-        }
-      }).resume()
-    }, onQueue: .global(qos: .userInitiated))
-  }
-
-  public static func request(
-    _ networkRequest: NetworkRequest,
-    progress: @escaping (Double) -> Void
-  ) async -> NetworkResponse<Data> {
     do {
-      var urlRequest = try networkRequest.urlRequest()
-      urlRequest.setValue("identity", forHTTPHeaderField: "Accept-Encoding")
-
       let (bytesStream, response) = try await URLSession.shared.bytes(for: urlRequest)
 
       guard let httpResponse = response as? HTTPURLResponse else {
         return .init(request: networkRequest, urlResponse: nil, result: .failure(NetworkRequestError.noDataReceived))
       }
 
+      // Handle rate limit
+      if httpResponse.isRateLimitExceeded, networkRequest.retryOnRateLimitExceedFailure, numberOfRetries < 10 {
+        NetworkLogger.requests.log("Rate Limit Exceeded")
+        networkRequest.rateLimiterType.informRateLimitHit()
+        return await _performRequest(networkRequest, skipCache: skipCache, numberOfRetries: numberOfRetries + 1, progress: progress)
+      }
+
       let expectedContentLength = httpResponse.expectedContentLength
       var downloadedData = Data()
       var totalBytesReceived: Int64 = 0
       var buffer = Data()
-      let bufferSize = 65536 // 64KB chunks
+      let bufferSize = 65536
 
       for try await byte in bytesStream {
         buffer.append(byte)
@@ -148,9 +100,8 @@ public final class NetworkHandler {
           downloadedData.append(buffer)
           buffer.removeAll(keepingCapacity: true)
 
-          if expectedContentLength > 0 {
-            let progressValue = Double(totalBytesReceived) / Double(expectedContentLength)
-            progress(progressValue)
+          if let progress, expectedContentLength > 0 {
+            progress(Double(totalBytesReceived) / Double(expectedContentLength))
           }
         }
       }
@@ -159,9 +110,59 @@ public final class NetworkHandler {
         downloadedData.append(buffer)
       }
 
+      networkRequest.rateLimiterType.informSuccessfulCompletion()
+
+      // Cache successful response
+#if DEBUG
+      if NetworkRequestsCacher.shared.isOn {
+        Task(priority: .low) {
+          NetworkRequestsCacher.shared.cache(urlRequest: urlRequest, data: downloadedData)
+        }
+      }
+#endif
+
+      if let cacheKey, case .duration(let duration) = networkRequest.cacheType, httpResponse.isSuccessful {
+        try? Self.storage.setObject(downloadedData, forKey: cacheKey, expiry: .seconds(duration))
+      }
+
       return .init(request: networkRequest, urlResponse: httpResponse, result: .success(downloadedData))
     } catch {
+      if let nsError = error as? NSError, networkRequest.retryOnTimeoutFailure, nsError.code == -1001, numberOfRetries < 3 {
+        NetworkLogger.requests.log("Timeout, retrying")
+        networkRequest.rateLimiterType.informRateLimitHit()
+        return await _performRequest(networkRequest, skipCache: skipCache, numberOfRetries: numberOfRetries + 1, progress: progress)
+      }
+
+      if networkRequest.retryLimit > numberOfRetries {
+        NetworkLogger.requests.log("Retrying request (\(numberOfRetries + 1)): \(urlRequest.url?.absoluteString ?? "")")
+        return await _performRequest(networkRequest, skipCache: skipCache, numberOfRetries: numberOfRetries + 1, progress: progress)
+      }
+
       return .init(request: networkRequest, urlResponse: nil, result: .failure(error))
+    }
+  }
+
+  // Async public API
+  public static func request(
+    _ networkRequest: NetworkRequest,
+    skipCache: Bool = false,
+    numberOfRetries: Int = 0,
+    progress: ((Double) -> Void)? = nil
+  ) async -> NetworkResponse<Data> {
+    await requestInternal(networkRequest, skipCache: skipCache, numberOfRetries: numberOfRetries, progress: progress)
+  }
+
+  // Completion-based wrapper
+  public static func request(
+    _ networkRequest: NetworkRequest,
+    skipCache: Bool = false,
+    numberOfRetries: Int = 0,
+    progress: ((Double) -> Void)? = nil,
+    completion: @escaping (NetworkResponse<Data>) -> Void,
+  ) {
+    Task {
+      let response = await request(networkRequest, skipCache: skipCache, numberOfRetries: numberOfRetries, progress: progress)
+      completion(response)
     }
   }
 }
