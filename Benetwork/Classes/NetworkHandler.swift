@@ -30,7 +30,7 @@ public final class NetworkHandler {
   private static func requestInternal(
     _ networkRequest: NetworkRequest,
     skipCache: Bool,
-    numberOfRetries: Int = 0,
+    numberOfRetries: Int? = nil,
     progress: ((Double) -> Void)? = nil
   ) async -> NetworkResponse<Data> {
     return await withCheckedContinuation { continuation in
@@ -46,7 +46,7 @@ public final class NetworkHandler {
   private static func _performRequest(
     _ networkRequest: NetworkRequest,
     skipCache: Bool,
-    numberOfRetries: Int = 0,
+    numberOfRetries: Int? = nil,
     progress: ((Double) -> Void)? = nil
   ) async -> NetworkResponse<Data> {
     var urlRequest: URLRequest
@@ -72,6 +72,7 @@ public final class NetworkHandler {
       }
     }
 
+    let numberOfRetries = numberOfRetries ?? networkRequest.retryLimit
     do {
       let (bytesStream, response) = try await URLSession.shared.bytes(for: urlRequest)
 
@@ -146,22 +147,20 @@ public final class NetworkHandler {
   public static func request(
     _ networkRequest: NetworkRequest,
     skipCache: Bool = false,
-    numberOfRetries: Int = 0,
     progress: ((Double) -> Void)? = nil
   ) async -> NetworkResponse<Data> {
-    await requestInternal(networkRequest, skipCache: skipCache, numberOfRetries: numberOfRetries, progress: progress)
+    await requestInternal(networkRequest, skipCache: skipCache, numberOfRetries: nil, progress: progress)
   }
 
   // Completion-based wrapper
   public static func request(
     _ networkRequest: NetworkRequest,
     skipCache: Bool = false,
-    numberOfRetries: Int = 0,
     progress: ((Double) -> Void)? = nil,
     completion: @escaping (NetworkResponse<Data>) -> Void,
   ) {
     Task {
-      let response = await request(networkRequest, skipCache: skipCache, numberOfRetries: numberOfRetries, progress: progress)
+      let response = await request(networkRequest, skipCache: skipCache, progress: progress)
       completion(response)
     }
   }

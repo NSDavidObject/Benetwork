@@ -62,9 +62,18 @@ extension ConstructibleResponse where Self: NetworkRequest {
     }
   }
   
-  public func requestAndConstructSuccessOrThrow(withPostConstructionMiddlewares middlewares: [NetworkResponseMiddleware.Type] = [], skipCache: Bool = false) async throws -> ReturnType {
-    let result = try await requestAndConstruct(skipCache: skipCache)
-    switch result.result {
+  public func requestAndConstructSuccessOrThrow(
+    withPostConstructionMiddlewares middlewares: [NetworkResponseMiddleware.Type] = [],
+    skipCache: Bool = false,
+    progress: ((Double) -> Void)? = nil
+  ) async throws -> ReturnType {
+    let urlDataResponse = try await NetworkHandler.request(self, skipCache: skipCache, progress: progress)
+    let jsonResult = urlDataResponse.result.flatMap({ JSONSerializer.serialize(data: $0) })
+    let jsonResponse = urlDataResponse.response(withResult: jsonResult)
+    let constructedResult = jsonResponse.result.flatMap({ self.construct($0)  })
+    let constructedResultResponse = jsonResponse.response(withResult: constructedResult)
+    let interceptedConstructedResultResponse = middlewares.intercepting(constructedResultResponse)
+    switch interceptedConstructedResultResponse.result {
     case .success(let value): return value
     case .failure(let error): throw error
     }
