@@ -72,6 +72,10 @@ public final class NetworkHandler {
       }
     }
 
+    #if DEBUG
+    NetworkLogger.requests.log("Requesting: \(urlRequest.url!.absoluteString)")
+    #endif
+
     let numberOfRetries = numberOfRetries ?? networkRequest.retryLimit
     do {
       let (bytesStream, response) = try await URLSession.shared.bytes(for: urlRequest)
