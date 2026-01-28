@@ -67,12 +67,35 @@ extension ConstructibleResponse where Self: NetworkRequest {
     skipCache: Bool = false,
     progress: ((Double) -> Void)? = nil
   ) async throws -> ReturnType {
+    // Step 1: Get raw data response
     let urlDataResponse = try await NetworkHandler.request(self, skipCache: skipCache, progress: progress)
-    let jsonResult = urlDataResponse.result.flatMap({ JSONSerializer.serialize(data: $0) })
-    let jsonResponse = urlDataResponse.response(withResult: jsonResult)
-    let constructedResult = jsonResponse.result.flatMap({ self.construct($0)  })
-    let constructedResultResponse = jsonResponse.response(withResult: constructedResult)
+    let request = urlDataResponse.request
+    let urlResponse = urlDataResponse.urlResponse
+
+    // Step 2: Serialize to JSON and immediately release Data
+    let jsonResult: Result<JSON>
+    switch urlDataResponse.result {
+    case .success(let data):
+      jsonResult = JSONSerializer.serialize(data: data)
+      // data is released after this scope
+    case .failure(let error):
+      jsonResult = .failure(error)
+    }
+
+    // Step 3: Construct object and immediately release JSON
+    let constructedResult: Result<ReturnType>
+    switch jsonResult {
+    case .success(let json):
+      constructedResult = self.construct(json)
+      // json is released after this scope
+    case .failure(let error):
+      constructedResult = .failure(error)
+    }
+
+    // Step 4: Apply middlewares and return
+    let constructedResultResponse = NetworkResponse(request: request, urlResponse: urlResponse, result: constructedResult)
     let interceptedConstructedResultResponse = middlewares.intercepting(constructedResultResponse)
+
     switch interceptedConstructedResultResponse.result {
     case .success(let value): return value
     case .failure(let error): throw error
