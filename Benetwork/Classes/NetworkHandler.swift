@@ -66,10 +66,8 @@ public final class NetworkHandler {
 #endif
 
     let cacheKey: String? = try? networkRequest.constructedURL().normalizedCacheKey(commaSeparatedQueryKeys: networkRequest.cacheCommaSeparatedQueryKeys)
-    if !skipCache, let cacheKey {
-      if let cachedValue = try? Self.storage.nonExpiredObjectById(cacheKey), !cacheKey.contains("localhost") {
-        return .init(request: networkRequest, urlResponse: nil, result: .success(cachedValue))
-      }
+    if !skipCache, let cacheKey, !cacheKey.contains("localhost"), let cachedValue = try? Self.storage.nonExpiredObjectById(cacheKey) {
+      return .init(request: networkRequest, urlResponse: nil, result: .success(cachedValue))
     }
 
     #if DEBUG
