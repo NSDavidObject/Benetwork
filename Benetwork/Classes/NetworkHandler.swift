@@ -43,6 +43,119 @@ public final class NetworkHandler {
     }
   }
 
+  // MARK: - Shared Helpers
+
+  private static func prepareURLRequest(_ networkRequest: NetworkRequest) throws -> URLRequest {
+    var urlRequest = try networkRequest.urlRequest()
+    urlRequest.setValue("identity", forHTTPHeaderField: "Accept-Encoding")
+    return urlRequest
+  }
+
+  private static func shouldRetryForRateLimit(
+    _ httpResponse: HTTPURLResponse,
+    _ networkRequest: NetworkRequest,
+    numberOfRetries: Int
+  ) -> Bool {
+    return httpResponse.isRateLimitExceeded && networkRequest.retryOnRateLimitExceedFailure && numberOfRetries < 10
+  }
+
+  private static func shouldRetryForTimeout(
+    _ error: Error,
+    _ networkRequest: NetworkRequest,
+    numberOfRetries: Int
+  ) -> Bool {
+    if let nsError = error as? NSError, networkRequest.retryOnTimeoutFailure, nsError.code == -1001, numberOfRetries < 3 {
+      return true
+    }
+    return false
+  }
+
+  private static func shouldRetryGeneric(
+    _ networkRequest: NetworkRequest,
+    numberOfRetries: Int
+  ) -> Bool {
+    return networkRequest.retryLimit > numberOfRetries
+  }
+
+  private static func streamToMemory(
+    _ bytesStream: URLSession.AsyncBytes,
+    expectedContentLength: Int64,
+    progress: ((Double) -> Void)?
+  ) async throws -> Data {
+    var downloadedData = Data()
+    var totalBytesReceived: Int64 = 0
+    var buffer = Data()
+    let bufferSize = 65536
+
+    for try await byte in bytesStream {
+      buffer.append(byte)
+      totalBytesReceived += 1
+
+      if buffer.count >= bufferSize {
+        downloadedData.append(buffer)
+        buffer.removeAll(keepingCapacity: true)
+
+        if let progress, expectedContentLength > 0 {
+          progress(Double(totalBytesReceived) / Double(expectedContentLength))
+        }
+      }
+    }
+
+    if !buffer.isEmpty {
+      downloadedData.append(buffer)
+    }
+
+    return downloadedData
+  }
+
+  private static func streamToFile(
+    _ bytesStream: URLSession.AsyncBytes,
+    outputURL: URL,
+    expectedContentLength: Int64,
+    progress: ((Double) -> Void)?
+  ) async throws -> Void {
+    guard let outputStream = OutputStream(url: outputURL, append: false) else {
+      throw NetworkRequestError.requestFailed(message: "Failed to create output stream")
+    }
+    outputStream.open()
+    defer { outputStream.close() }
+
+    var totalBytesReceived: Int64 = 0
+    var buffer = Data()
+    let bufferSize = 65536
+
+    for try await byte in bytesStream {
+      buffer.append(byte)
+      totalBytesReceived += 1
+
+      if buffer.count >= bufferSize {
+        let written = buffer.withUnsafeBytes { ptr in
+          outputStream.write(ptr.bindMemory(to: UInt8.self).baseAddress!, maxLength: buffer.count)
+        }
+        if written < 0 {
+          throw NetworkRequestError.requestFailed(message: "Failed to write to output file")
+        }
+        buffer.removeAll(keepingCapacity: true)
+
+        if let progress, expectedContentLength > 0 {
+          progress(Double(totalBytesReceived) / Double(expectedContentLength))
+        }
+      }
+    }
+
+    // Write remaining buffer
+    if !buffer.isEmpty {
+      let written = buffer.withUnsafeBytes { ptr in
+        outputStream.write(ptr.bindMemory(to: UInt8.self).baseAddress!, maxLength: buffer.count)
+      }
+      if written < 0 {
+        throw NetworkRequestError.requestFailed(message: "Failed to write final buffer to output file")
+      }
+    }
+  }
+
+  // MARK: - Core Request Implementation
+
   private static func _performRequest(
     _ networkRequest: NetworkRequest,
     skipCache: Bool,
@@ -51,12 +164,10 @@ public final class NetworkHandler {
   ) async -> NetworkResponse<Data> {
     var urlRequest: URLRequest
     do {
-      urlRequest = try networkRequest.urlRequest()
+      urlRequest = try prepareURLRequest(networkRequest)
     } catch {
       return .init(request: networkRequest, urlResponse: nil, result: .failure(error))
     }
-
-    urlRequest.setValue("identity", forHTTPHeaderField: "Accept-Encoding")
 
     // Cache check
 #if DEBUG
@@ -83,35 +194,17 @@ public final class NetworkHandler {
       }
 
       // Handle rate limit
-      if httpResponse.isRateLimitExceeded, networkRequest.retryOnRateLimitExceedFailure, numberOfRetries < 10 {
+      if shouldRetryForRateLimit(httpResponse, networkRequest, numberOfRetries: numberOfRetries) {
         NetworkLogger.requests.log("Rate Limit Exceeded")
         networkRequest.rateLimiterType.informRateLimitHit()
         return await _performRequest(networkRequest, skipCache: skipCache, numberOfRetries: numberOfRetries + 1, progress: progress)
       }
 
-      let expectedContentLength = httpResponse.expectedContentLength
-      var downloadedData = Data()
-      var totalBytesReceived: Int64 = 0
-      var buffer = Data()
-      let bufferSize = 65536
-
-      for try await byte in bytesStream {
-        buffer.append(byte)
-        totalBytesReceived += 1
-
-        if buffer.count >= bufferSize {
-          downloadedData.append(buffer)
-          buffer.removeAll(keepingCapacity: true)
-
-          if let progress, expectedContentLength > 0 {
-            progress(Double(totalBytesReceived) / Double(expectedContentLength))
-          }
-        }
-      }
-
-      if !buffer.isEmpty {
-        downloadedData.append(buffer)
-      }
+      let downloadedData = try await streamToMemory(
+        bytesStream,
+        expectedContentLength: httpResponse.expectedContentLength,
+        progress: progress
+      )
 
       networkRequest.rateLimiterType.informSuccessfulCompletion()
 
@@ -130,13 +223,13 @@ public final class NetworkHandler {
 
       return .init(request: networkRequest, urlResponse: httpResponse, result: .success(downloadedData))
     } catch {
-      if let nsError = error as? NSError, networkRequest.retryOnTimeoutFailure, nsError.code == -1001, numberOfRetries < 3 {
+      if shouldRetryForTimeout(error, networkRequest, numberOfRetries: numberOfRetries) {
         NetworkLogger.requests.log("Timeout, retrying")
         networkRequest.rateLimiterType.informRateLimitHit()
         return await _performRequest(networkRequest, skipCache: skipCache, numberOfRetries: numberOfRetries + 1, progress: progress)
       }
 
-      if networkRequest.retryLimit > numberOfRetries {
+      if shouldRetryGeneric(networkRequest, numberOfRetries: numberOfRetries) {
         NetworkLogger.requests.log("Retrying request (\(numberOfRetries + 1)): \(urlRequest.url?.absoluteString ?? "")")
         return await _performRequest(networkRequest, skipCache: skipCache, numberOfRetries: numberOfRetries + 1, progress: progress)
       }
@@ -164,6 +257,76 @@ public final class NetworkHandler {
     Task {
       let response = await request(networkRequest, skipCache: skipCache, progress: progress)
       completion(response)
+    }
+  }
+
+  // MARK: - File Download API
+
+  /// Downloads a network request directly to a file URL instead of loading into memory.
+  /// This is ideal for large files (EPG XML, video files, etc.) to avoid memory spikes.
+  /// - Parameters:
+  ///   - networkRequest: The network request to download
+  ///   - outputURL: The file URL where the downloaded data should be written
+  ///   - numberOfRetries: Internal retry counter (do not pass manually)
+  ///   - progress: Optional progress callback (0.0 to 1.0)
+  /// - Returns: NetworkResponse with the output file URL and HTTPURLResponse
+  public static func downloadToFile(
+    _ networkRequest: NetworkRequest,
+    outputURL: URL,
+    numberOfRetries: Int? = nil,
+    progress: ((Double) -> Void)? = nil
+  ) async -> NetworkResponse<URL> {
+    var urlRequest: URLRequest
+    do {
+      urlRequest = try prepareURLRequest(networkRequest)
+    } catch {
+      return .init(request: networkRequest, urlResponse: nil, result: .failure(error))
+    }
+
+    #if DEBUG
+    NetworkLogger.requests.log("Downloading to file: \(urlRequest.url!.absoluteString)")
+    #endif
+
+    let numberOfRetries = numberOfRetries ?? networkRequest.retryLimit
+    do {
+      let (bytesStream, response) = try await URLSession.shared.bytes(for: urlRequest)
+
+      guard let httpResponse = response as? HTTPURLResponse else {
+        return .init(request: networkRequest, urlResponse: nil, result: .failure(NetworkRequestError.noDataReceived))
+      }
+
+      // Handle rate limit
+      if shouldRetryForRateLimit(httpResponse, networkRequest, numberOfRetries: numberOfRetries) {
+        NetworkLogger.requests.log("Rate Limit Exceeded")
+        networkRequest.rateLimiterType.informRateLimitHit()
+        try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+        return await downloadToFile(networkRequest, outputURL: outputURL, numberOfRetries: numberOfRetries + 1, progress: progress)
+      }
+
+      try await streamToFile(
+        bytesStream,
+        outputURL: outputURL,
+        expectedContentLength: httpResponse.expectedContentLength,
+        progress: progress
+      )
+
+      networkRequest.rateLimiterType.informSuccessfulCompletion()
+
+      return .init(request: networkRequest, urlResponse: httpResponse, result: .success(outputURL))
+    } catch {
+      if shouldRetryForTimeout(error, networkRequest, numberOfRetries: numberOfRetries) {
+        NetworkLogger.requests.log("Timeout, retrying download")
+        networkRequest.rateLimiterType.informRateLimitHit()
+        try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+        return await downloadToFile(networkRequest, outputURL: outputURL, numberOfRetries: numberOfRetries + 1, progress: progress)
+      }
+
+      if shouldRetryGeneric(networkRequest, numberOfRetries: numberOfRetries) {
+        NetworkLogger.requests.log("Retrying download (\(numberOfRetries + 1)): \(urlRequest.url?.absoluteString ?? "")")
+        return await downloadToFile(networkRequest, outputURL: outputURL, numberOfRetries: numberOfRetries + 1, progress: progress)
+      }
+
+      return .init(request: networkRequest, urlResponse: nil, result: .failure(error))
     }
   }
 }
