@@ -185,7 +185,7 @@ public final class NetworkHandler {
     NetworkLogger.requests.log("Requesting: \(urlRequest.url!.absoluteString)")
     #endif
 
-    let numberOfRetries = numberOfRetries ?? networkRequest.retryLimit
+    let numberOfRetries = numberOfRetries ?? 0
     do {
       let (bytesStream, response) = try await URLSession.shared.bytes(for: urlRequest)
 
@@ -287,7 +287,7 @@ public final class NetworkHandler {
     NetworkLogger.requests.log("Downloading to file: \(urlRequest.url!.absoluteString)")
     #endif
 
-    let numberOfRetries = numberOfRetries ?? networkRequest.retryLimit
+    let numberOfRetries = numberOfRetries ?? 0
     do {
       let (bytesStream, response) = try await URLSession.shared.bytes(for: urlRequest)
 
