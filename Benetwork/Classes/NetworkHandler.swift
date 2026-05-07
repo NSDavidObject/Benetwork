@@ -5,6 +5,10 @@ public enum NetworkRequestError: Error {
   case noDataReceived
   case requestFailedGenerically
   case requestFailed(message: String)
+  /// The stream ended before delivering all the bytes announced by the
+  /// `Content-Length` header. Treated as a retryable failure so truncated
+  /// responses don't get cached and served back as "valid" data.
+  case truncatedResponse(received: Int64, expected: Int64)
 }
 
 public final class NetworkHandler {
@@ -105,6 +109,15 @@ public final class NetworkHandler {
       downloadedData.append(buffer)
     }
 
+    // URLSession's byte stream doesn't throw when a transfer ends short of the
+    // promised Content-Length (e.g. mid-TLS-record drop, captive-portal MitM,
+    // flaky intermediary). Validate explicitly so the caller gets a retryable
+    // error instead of partial data that fails downstream as malformed JSON
+    // and gets cached.
+    if expectedContentLength > 0, totalBytesReceived < expectedContentLength {
+      throw NetworkRequestError.truncatedResponse(received: totalBytesReceived, expected: expectedContentLength)
+    }
+
     return downloadedData
   }
 
@@ -151,6 +164,11 @@ public final class NetworkHandler {
       if written < 0 {
         throw NetworkRequestError.requestFailed(message: "Failed to write final buffer to output file")
       }
+    }
+
+    // See `streamToMemory` — the byte stream doesn't throw on short-read.
+    if expectedContentLength > 0, totalBytesReceived < expectedContentLength {
+      throw NetworkRequestError.truncatedResponse(received: totalBytesReceived, expected: expectedContentLength)
     }
   }
 
