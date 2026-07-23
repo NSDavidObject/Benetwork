@@ -41,6 +41,13 @@ public protocol NetworkRequest {
   var cacheType: NetworkRequestCache { get }
   var cacheCommaSeparatedQueryKeys: Set<String>? { get }
 
+  /// Called once when a response arrives, before its body is consumed. Return
+  /// `true` to have the request re-issued a single time — the retry rebuilds
+  /// `urlRequest()` from scratch, so any credentials refreshed here (e.g. an
+  /// auth/attestation token in `headers`) are picked up on the retry. Perform
+  /// any such async recovery before returning `true`. Default: never retries.
+  func shouldRetry(after httpResponse: HTTPURLResponse) async -> Bool
+
   func urlRequest() throws -> URLRequest
 }
 
@@ -84,6 +91,10 @@ extension NetworkRequest {
   }
   
   public var retryOnTimeoutFailure: Bool {
+    return false
+  }
+
+  public func shouldRetry(after httpResponse: HTTPURLResponse) async -> Bool {
     return false
   }
 }

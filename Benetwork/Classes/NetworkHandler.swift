@@ -178,6 +178,7 @@ public final class NetworkHandler {
     _ networkRequest: NetworkRequest,
     skipCache: Bool,
     numberOfRetries: Int? = nil,
+    didAttemptResponseRetry: Bool = false,
     progress: ((Double) -> Void)? = nil
   ) async -> NetworkResponse<Data> {
     var urlRequest: URLRequest
@@ -215,7 +216,14 @@ public final class NetworkHandler {
       if shouldRetryForRateLimit(httpResponse, networkRequest, numberOfRetries: numberOfRetries) {
         NetworkLogger.requests.log("Rate Limit Exceeded")
         networkRequest.rateLimiterType.informRateLimitHit()
-        return await _performRequest(networkRequest, skipCache: skipCache, numberOfRetries: numberOfRetries + 1, progress: progress)
+        return await _performRequest(networkRequest, skipCache: skipCache, numberOfRetries: numberOfRetries + 1, didAttemptResponseRetry: didAttemptResponseRetry, progress: progress)
+      }
+
+      // Per-request response recovery (e.g. auth/attestation rejection): let the
+      // request refresh credentials and re-issue once. The retry rebuilds the
+      // URLRequest, so refreshed headers are picked up.
+      if !didAttemptResponseRetry, await networkRequest.shouldRetry(after: httpResponse) {
+        return await _performRequest(networkRequest, skipCache: skipCache, numberOfRetries: numberOfRetries, didAttemptResponseRetry: true, progress: progress)
       }
 
       let downloadedData = try await streamToMemory(
@@ -244,12 +252,12 @@ public final class NetworkHandler {
       if shouldRetryForTimeout(error, networkRequest, numberOfRetries: numberOfRetries) {
         NetworkLogger.requests.log("Timeout, retrying")
         networkRequest.rateLimiterType.informRateLimitHit()
-        return await _performRequest(networkRequest, skipCache: skipCache, numberOfRetries: numberOfRetries + 1, progress: progress)
+        return await _performRequest(networkRequest, skipCache: skipCache, numberOfRetries: numberOfRetries + 1, didAttemptResponseRetry: didAttemptResponseRetry, progress: progress)
       }
 
       if shouldRetryGeneric(networkRequest, numberOfRetries: numberOfRetries) {
         NetworkLogger.requests.log("Retrying request (\(numberOfRetries + 1)): \(urlRequest.url?.absoluteString ?? "")")
-        return await _performRequest(networkRequest, skipCache: skipCache, numberOfRetries: numberOfRetries + 1, progress: progress)
+        return await _performRequest(networkRequest, skipCache: skipCache, numberOfRetries: numberOfRetries + 1, didAttemptResponseRetry: didAttemptResponseRetry, progress: progress)
       }
 
       return .init(request: networkRequest, urlResponse: nil, result: .failure(error))
